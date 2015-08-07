@@ -1,5 +1,7 @@
 # mcwrap
 
+Call a C/C++ function from MATLAB without fiddling with MEX.
+
 ## Getting started
 
 Just run "test_example1.m"
