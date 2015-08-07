@@ -1,0 +1,4 @@
+    for (int i=0; i<($total_size$); i++) {
+        _output_$pname$[i]=output_$pname$[i];
+    }
+    free(output_$pname$);    

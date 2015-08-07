@@ -1,0 +1,2 @@
+    $dtype$ _input_$pname$=mxGetScalar(prhs[$rhs_index$]);
+    $dtype$ input_N=_input_N;

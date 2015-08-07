@@ -1,0 +1,11 @@
+#ifndef reverse_it_h
+#define reverse_it_h
+
+/*
+ * MCWRAP reverse_it { X_out[1,$N$] } <- { N , X_in[1,$N$] }
+ * SOURCE reverse_it.cpp
+ */
+
+void reverse_it(int N,float *X_out,float *X_in);
+
+#endif
