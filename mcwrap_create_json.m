@@ -50,12 +50,14 @@ for j=1:length(lines)
                             if (ind0>0)
                                 params{j}.prole='input';
                                 params{j}.dimensions=current_wrapping.input_parameters{ind0}.dimensions;
+                                params{j}.is_complex=current_wrapping.input_parameters{ind0}.is_complex;
                             end;
                             ind0=find_param(current_wrapping.output_parameters,params{j}.pname);
                             if (ind0>0)
                                 if (strcmp(params{j}.prole,'input')) params{j}.prole='inoutput'
                                 else params{j}.prole='output'; end;
                                 params{j}.dimensions=current_wrapping.output_parameters{ind0}.dimensions;
+                                params{j}.is_complex=current_wrapping.output_parameters{ind0}.is_complex;
                             end;
                             if (isempty(params{j}.prole))
                                 error(sprintf('Unable to find parameter in MCWRAP macro, %s, line %d: %s',params{j}.pname,j,problem));
@@ -95,7 +97,7 @@ for j=1:length(wrappings)
             if (aa>1) dims_str=[dims_str,',']; end;
             dims_str=[dims_str,'"',param.dimensions{aa},'"'];
         end;
-        list{end+1}=sprintf('\t\t{"prole":"%s","ptype":"%s","pname":"%s","dimensions":[%s]}%s',param.prole,param.ptype,param.pname,dims_str,comma);
+        list{end+1}=sprintf('\t\t{"prole":"%s","ptype":"%s","pname":"%s","dimensions":[%s],"is_complex":"%d"}%s',param.prole,param.ptype,param.pname,dims_str,param.is_complex,comma);
     end;
     list{end+1}=sprintf('\t],');
     list{end+1}=sprintf('\t"return_type":"void"');
@@ -149,7 +151,7 @@ for j=ind+1:j-1
     tokens2{end+1}=tokens{j};
 end;
 
-empty_current_param=struct; empty_current_param.pname=''; empty_current_param.dimensions={};
+empty_current_param=struct; empty_current_param.pname=''; empty_current_param.dimensions={}; empty_current_param.is_complex=0;
 current_param=empty_current_param;
 current_dim='';
 
@@ -167,7 +169,8 @@ while (ii<=length(tokens2))
             in_brackets=true;
         else
             if (~isempty(current_param.pname)) ind2=-1; problem='pname is not empty'; end;
-            current_param.pname=token;
+            if (strcmp(token,'COMPLEX')) current_param.is_complex=1;
+            else current_param.pname=token; end;
         end;
     else
         if (strcmp(token,','))

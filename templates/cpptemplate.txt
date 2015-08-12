@@ -31,7 +31,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     ///
     %foreach input
         %if $is_array$=1
-            ^template setup_input_array
+            ^template setup_input_array$underscore_complex$
         %end if $is_array$=1
         %if $is_array$=0
             ^template setup_input_scalar
@@ -43,7 +43,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     ///
     %foreach output
         %if $is_array$=1
-            ^template setup_output_array
+            ^template setup_output_array$underscore_complex$
         %end if $is_array$=1
         %if $is_array$=0
             ^template setup_output_scalar
@@ -67,7 +67,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     ///
     %foreach output
         %if $is_array$=1
-            ^template set_output_array
+            ^template set_output_array$underscore_complex$
         %end if $is_array$=1
         %if $is_array$=0
             ^template set_output_scalar
@@ -86,6 +86,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         input_$pname$[i]=p_input_$pname$[i];
     }
 
+#### setup_input_array_complex
+
+    double *p_input_$pname$_re=mxGetPr(prhs[$pindex$-1]);
+    double *p_input_$pname$_im=mxGetPi(prhs[$pindex$-1]);
+    $dtype$ *input_$pname$=($dtype$ *)malloc(sizeof($dtype$)*($total_size$)*2);
+    for (int i=0; i<($total_size$); i++) {
+        input_$pname$[i*2]=p_input_$pname$_re[i];
+        input_$pname$[i*2+1]=p_input_$pname$_im[i];
+    }
+
 #### setup_input_scalar
 
     $dtype$ input_$pname$=mxGetScalar(prhs[$pindex$-1]);
@@ -95,6 +105,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     plhs[$pindex$-1]=mxCreateDoubleMatrix($dimensions$,mxREAL);
     double *p_output_$pname$=mxGetPr(plhs[$pindex$-1]);
     $dtype$ *output_$pname$=($dtype$ *)malloc(sizeof($dtype$)*($total_size$));
+
+#### setup_output_array_complex
+
+    plhs[$pindex$-1]=mxCreateDoubleMatrix($dimensions$,mxCOMPLEX);
+    double *p_output_$pname$_re=mxGetPr(plhs[$pindex$-1]);
+    double *p_output_$pname$_im=mxGetPi(plhs[$pindex$-1]);
+    $dtype$ *output_$pname$=($dtype$ *)malloc(sizeof($dtype$)*($total_size$)*2);
 
 #### setup_output_scalar
 
@@ -110,6 +127,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         p_output_$pname$[i]=output_$pname$[i];
     }
     free(output_$pname$);    
+
+#### set_output_array_complex
+
+    for (int i=0; i<($total_size$); i++) {
+        p_output_$pname$_re[i]=output_$pname$[i*2];
+        p_output_$pname$_im[i]=output_$pname$[i*2+1];
+    }
+    free(output_$pname$);
 
 #### set_output_scalar
 

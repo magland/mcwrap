@@ -145,6 +145,12 @@ while (jj<=length(lines))
                 txt3=strrep(txt3,'$ptype$',PP.ptype);
                 txt3=strrep(txt3,'$dtype$',PP.dtype);
                 txt3=strrep(txt3,'$is_array$',sprintf('%d',PP.is_array));
+                txt3=strrep(txt3,'$is_complex$',sprintf('%d',PP.is_complex));
+                if (strcmp(PP.is_complex,'1'))
+                    txt3=strrep(txt3,'$underscore_complex$','_complex');
+                else
+                    txt3=strrep(txt3,'$underscore_complex$','');
+                end;
                 code_lines2=evaluate_template(template_txt,txt3,input_parameters,output_parameters,PP);
                 for aa=1:length(code_lines2)
                     code_lines{end+1}=code_lines2{aa};
@@ -188,6 +194,12 @@ if (~isempty(current_parameter))
         code_lines{aa}=strrep(code_lines{aa},'$ptype$',PP.ptype);
         code_lines{aa}=strrep(code_lines{aa},'$dtype$',PP.dtype);
         code_lines{aa}=strrep(code_lines{aa},'$is_array$',sprintf('%d',PP.is_array));
+        code_lines{aa}=strrep(code_lines{aa},'$is_complex$',sprintf('%d',PP.is_complex));
+        if (strcmp(PP.is_complex,'1'))
+            code_lines{aa}=strrep(code_lines{aa},'$underscore_complex$','_complex');
+        else
+            code_lines{aa}=strrep(code_lines{aa},'$underscore_complex$','');
+        end;
         code_lines{aa}=strrep(code_lines{aa},'$pname$',PP.pname);
         code_lines{aa}=strrep(code_lines{aa},'$dimensions$',dimensions);
         code_lines{aa}=strrep(code_lines{aa},'$pindex$',sprintf('%d',PP.pindex));
