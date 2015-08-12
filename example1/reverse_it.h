@@ -6,6 +6,7 @@
  * SOURCE reverse_it.cpp
  */
 
+//reverse the order of a vector
 void reverse_it(int N,float *X_out,float *X_in);
 
 #endif

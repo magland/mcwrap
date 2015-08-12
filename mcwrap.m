@@ -1,11 +1,11 @@
-function mcwrap(cpp_header_fname)
+function mcwrap(code_fname)
 %MCWRAP - Auto-wrap a C/C++ file to be called from matlab
 % Call a C/C++ function with minimal complexity, no mex programming
 %
-% Syntax:  [] = mcwrap(cpp_header_fname)
+% Syntax:  [] = mcwrap(code_fname)
 %
 % Inputs:
-%    cpp_header_fname - The path to a .h file, which must have been
+%    code_fname - The path to a .h or .F file, which must have been
 %    prepared with special MCWRAP syntax
 %
 % Outputs:
@@ -14,450 +14,267 @@ function mcwrap(cpp_header_fname)
 % Example: 
 %    See example1 directory
 %
-% Other m-files required: parse_json.m
+% Other m-files required: parse_json.m, mcwrap_create_json.m
 % Other files required: all .txt files in the "templates" directory
 
 % Author: Jeremy Magland, Ph.D.
 % email address: jeremy.magland@gmail.com
 % Website: http://magland.github.io
-% August 2015; Last revision: 7-Aug-2015
+% August 2015; Last revision: 12-Aug-2015
 
-[dirname,basename]=fileparts(cpp_header_fname);
+
+[dirname,code_basename,extension]=fileparts(code_fname);
 if (isempty(dirname)) dirname='.'; end;
 if (~exist(sprintf('%s/_mcwrap',dirname),'dir'))
     mkdir(sprintf('%s/_mcwrap',dirname));
 end;
 
-json=mcwrap_part_1(cpp_header_fname);
-json_fname=sprintf('%s/_mcwrap/mcwrap_%s.json',dirname,basename);
+json=mcwrap_create_json(code_fname);
+json_fname=sprintf('%s/_mcwrap/mcwrap_%s.json',dirname,code_basename);
 FF=fopen(json_fname,'w');
 fprintf(FF,'%s',json);
 fclose(FF);
 
-[~,h_base_name]=fileparts(cpp_header_fname);
-mcwrap_part_2(h_base_name,json_fname);
+JSON=parse_json(fileread(json_fname));
+m_file_path=fileparts(mfilename('fullpath'));
+template_dir=[m_file_path,'/templates'];
 
-%tokens=tokenize('/* this is a test */');
-%remove_leading_comment_characters(tokens)
+for j=1:length(JSON)
+    XX=JSON{j}{1};
+    
+    input_parameters={};
+    output_parameters={};
+    arguments='';
+    for j=1:length(XX.parameters)
+        if (j>1) arguments=[arguments,',']; end;
+        if (strcmp(XX.parameters{j}.prole,'input'))
+            input_parameters{end+1}=XX.parameters{j};
+            arguments=[arguments,'input_',XX.parameters{j}.pname];
+        elseif (strcmp(XX.parameters{j}.prole,'output'))
+            output_parameters{end+1}=XX.parameters{j};
+            arguments=[arguments,'output_',XX.parameters{j}.pname];
+        end;
+    end;
+    
+    if (strcmp(extension,'.h'))
+        template_txt=fileread([template_dir,'/cpptemplate.txt']);
+    elseif (strcmp(extension,'.f')||strcmp(extension,'.F'))
+        template_txt=fileread([template_dir,'/ftemplate.txt']);
+    end;
+    template_code=get_template_code(template_txt,'main');
+    disp(sprintf('evaluating template for %s...',XX.function_name));
+    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,[]);
+    code=cell_array_to_string(code_lines);
+    
+    code=strrep(code,'$num_inputs$',sprintf('%d',length(input_parameters)));
+    code=strrep(code,'$num_outputs$',sprintf('%d',length(output_parameters)));
+    code=strrep(code,'$function_name$',XX.function_name);
+    code=strrep(code,'$arguments$',arguments);
+    code=strrep(code,'$code_basename$',code_basename);
+    
+    for j=1:length(input_parameters)
+        code=strrep(code,sprintf('$%s$',input_parameters{j}.pname),sprintf('input_%s',input_parameters{j}.pname));
+    end;
+    
+    if (strcmp(extension,'.h'))
+        mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.cpp',dirname,XX.function_name);
+    elseif (strcmp(XX.parameters{j}.prole,'output'))
+        mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.F',dirname,XX.function_name);
+    end;
+    
+    FF=fopen(mex_source_fname,'w');
+    fprintf(FF,'%s',code);
+    fclose(FF);
+    
+    evalstr=['mex ',mex_source_fname];
+    for aa=1:length(XX.sources)
+        evalstr=[evalstr,' ',sprintf('%s/%s',dirname,XX.sources{aa})];
+    end
+    evalstr=[evalstr,' -output ',dirname,'/',XX.function_name];
+    disp(evalstr);
+    eval(evalstr);
+end;
+disp('done.');
 
 end
 
-function json=mcwrap_part_1(cpp_header_fname)
+function code_lines=evaluate_template(template_txt,code,input_parameters,output_parameters,current_parameter)
 
-wrappings={};
-
-ret=true;
-str=fileread(cpp_header_fname);
-lines=strsplit(str,'\n');
-wrapping=false;
-current_wrapping=struct;
-current_sources={};
-for j=1:length(lines)
-    line=lines{j};
-    tokens=tokenize(line);
-    tokens=remove_leading_comment_characters(tokens);
-    if (length(tokens)>=1)
-        token1=tokens{1};
-        if (strcmp(token1,'MCWRAP'))
-            disp(line);
-            % EXAMPLE: MCWRAP reverse_it { X_out[1,$N$] } <- { N , X_in[1,$N$] }
-            if (wrapping) error(sprintf('Problem in mcwrap, line %d, already wrapping.',j)); end;
-            wrapping=true;
-            if (length(tokens)<9) error(sprintf('Problem in mcwrap, not enough tokens, line %d.',j)); end;
-            current_wrapping.function_name=tokens{2};
-            ind=3;
-            [current_wrapping.output_parameters,ind,problem]=parse_parameters(tokens,ind);
-            if (ind<=0) error(sprintf('Problem parsing output parameters, line %d: %s',j,problem)); end;
-            if (ind+2>length(tokens)) error(sprintf('Problem in mcwrap, not enough tokens (*), line %d.',j)); end;
-            if ((~strcmp(tokens{ind},'<'))||(~strcmp(tokens{ind+1},'-'))) error(sprintf('Problem in mcwrap, expected <-, line %d.',j)); end;
-            ind=ind+2;
-            [current_wrapping.input_parameters,ind,problem]=parse_parameters(tokens,ind);
-            if (ind<=0) error(sprintf('Problem parsing input parameters, line %d: %s',j,problem)); end;
-        elseif (strcmp(token1,'SOURCE'))
-            disp(line);
-            if (~wrapping) error(sprintf('Found SOURCE without a MCWRAP, line %d',j)); end;
-            for j=2:length(tokens)
-                current_sources{end+1}=tokens{j};
-            end;
-        else
-            if (wrapping)
-                if (length(tokens)>=2)
-                    if (strcmp(tokens{2},current_wrapping.function_name))
-                        disp(line);
-                        disp(' ');
-                        [params,ind,problem]=parse_cpp_parameters(tokens,3);
-                        if (ind<=0) error(sprintf('Problem parsing cpp parameters, line %d: %s',j,problem)); end;
-                        for j=1:length(params)
-                            params{j}.prole='';
-                            ind0=find_param(current_wrapping.input_parameters,params{j}.pname);
-                            if (ind0>0)
-                                params{j}.prole='input';
-                                params{j}.dimensions=current_wrapping.input_parameters{ind0}.dimensions;
-                            end;
-                            ind0=find_param(current_wrapping.output_parameters,params{j}.pname);
-                            if (ind0>0)
-                                if (strcmp(params{j}.prole,'input')) params{j}.prole='inoutput'
-                                else params{j}.prole='output'; end;
-                                params{j}.dimensions=current_wrapping.output_parameters{ind0}.dimensions;
-                            end;
-                            if (isempty(params{j}.prole))
-                                error(sprintf('Unable to find parameter in MCWRAP macro, %s, line %d: %s',params{j}.pname,j,problem));
-                            end;
+code_lines={};
+lines=strsplit(code,'\n','CollapseDelimiters',false);
+jj=1;
+while (jj<=length(lines))
+    tokens=tokenize(lines{jj});
+    if ((length(tokens)>=2)&&(strcmp(tokens{1},'%')))
+        kk=jj+1;
+        depth=1; found=0;
+        while ((kk<=length(lines))&&(~found))
+            tokens2=tokenize(lines{kk});
+            if ((length(tokens2)>=2))
+                if (strcmp(tokens2{1},'%'))
+                    if (strcmp(tokens2{2},'end'))
+                        depth=depth-1;
+                        if (depth==0)
+                            found=1;
                         end;
-                        current_wrapping.params=params;
-                        current_wrapping.sources=current_sources;
-                        current_wrapping=rmfield(current_wrapping,'input_parameters');
-                        current_wrapping=rmfield(current_wrapping,'output_parameters');
-                        wrappings{end+1}=current_wrapping;
-                        current_wrapping=struct;
-                        current_sources={};
-                        wrapping=false;
+                    else
+                        depth=depth+1;
                     end;
                 end;
             end;
+            if (~found) kk=kk+1; end;
         end;
-    end;
-end;
-
-fprintf('Processed %d wrappings.\n',length(wrappings));
-
-disp('Creating JSON...');
-list={};
-list{end+1}=sprintf('[');
-for j=1:length(wrappings)
-    wrapping=wrappings{j};
-    list{end+1}=sprintf('{');
-    list{end+1}=sprintf('\t"function_name":"%s",',wrapping.function_name);
-    list{end+1}=sprintf('\t"parameters"[');
-    for k=1:length(wrapping.params)
-        param=wrapping.params{k};
-        comma='';
-        if (k<length(wrapping.params)) comma=','; end;
-        dims_str='';
-        for aa=1:length(param.dimensions)
-            if (aa>1) dims_str=[dims_str,',']; end;
-            dims_str=[dims_str,'"',param.dimensions{aa},'"'];
+        txt2='';
+        for ii=jj+1:kk-1
+            if (ii>jj+1) txt2=[txt2,char(10)]; end;
+            txt2=[txt2,lines{ii}];
         end;
-        list{end+1}=sprintf('\t\t{"prole":"%s","ptype":"%s","pname":"%s","dimensions":[%s]}%s',param.prole,param.ptype,param.pname,dims_str,comma);
-    end;
-    list{end+1}=sprintf('\t],');
-    list{end+1}=sprintf('\t"return_type":"void"');
-    sources_str='';
-    for k=1:length(wrapping.sources)
-        source=wrapping.sources{k};
-        if (k>1) sources_str=[sources_str,',']; end;
-        sources_str=[sources_str,sprintf('"%s"',source)];
-            
-    end;
-    list{end+1}=sprintf('\t"sources":[%s]',sources_str);
-    comma='';
-    if (j<length(wrappings)) comma=','; end;
-    list{end+1}=sprintf('}%s',comma);
-end;
-list{end+1}=sprintf(']');
-
-json=cell_array_to_string(list);
-
-end
-
-function [parameters,ind2,problem]=parse_parameters(tokens,ind)
-%EXAMPLE: { N , X_in[1,$N$] }
-parameters={};
-problem='';
-if (length(tokens)<2) ind2=-1; problem='Not enough tokens (*)'; return; end;
-
-if (~strcmp(tokens{ind},'{')) ind2=-1; problem='Expected {'; return; end;
-j=ind+1;
-while ((j<=length(tokens))&&(~strcmp(tokens{j},'}')))
-    j=j+1;
-end;
-if (j>length(tokens)) ind2=-1; problem='Not enough tokens'; return; end;
-tokens2={};
-ind2=j+1;
-for j=ind+1:j-1
-    tokens2{end+1}=tokens{j};
-end;
-
-empty_current_param=struct; empty_current_param.pname=''; empty_current_param.dimensions={};
-current_param=empty_current_param;
-current_dim='';
-
-in_brackets=false;
-ii=1;
-while (ii<=length(tokens2))
-    token=tokens2{ii};
-    if (~in_brackets)
-        if (strcmp(token,','))
-            if (isempty(current_param.pname)) ind2=-1; problem='found comma, but pname is empty'; end;
-            parameters{end+1}=current_param;
-            current_param=empty_current_param;
-        elseif (strcmp(token,'['))
-            if (isempty(current_param.pname)) ind2=-1; problem='found [ but pname is empty'; end;
-            in_brackets=true;
-        else
-            if (~isempty(current_param.pname)) ind2=-1; problem='pname is not empty'; end;
-            current_param.pname=token;
-        end;
-    else
-        if (strcmp(token,','))
-            if (isempty(current_dim)) ind2=-1; problem='found comma, but current_dim is empty'; end;
-            current_param.dimensions{end+1}=current_dim;
-            current_dim='';
-        elseif (strcmp(token,']'))
-            if (~isempty(current_dim))
-                current_param.dimensions{end+1}=current_dim;
-                current_dim='';
+        if ((strcmp(tokens{2},'foreach'))&&(length(tokens)>=3))
+            parameters={};
+            if (strcmp(tokens{3},'input'))
+                parameters=input_parameters;
+            elseif (strcmp(tokens{3},'output'))
+                parameters=output_parameters;
             end;
-            in_brackets=false;
-        else
-            current_dim=[current_dim,token];
+            for ii=1:length(parameters)
+                PP=parameters{ii};
+                PP.pindex=ii;
+                PP.dtype=strrep(PP.ptype,'*','');
+                PP.is_array=(length(strfind(PP.ptype,'*'))>0);
+                txt3=txt2;
+                txt3=strrep(txt3,'$ptype$',PP.ptype);
+                txt3=strrep(txt3,'$dtype$',PP.dtype);
+                txt3=strrep(txt3,'$is_array$',sprintf('%d',PP.is_array));
+                code_lines2=evaluate_template(template_txt,txt3,input_parameters,output_parameters,PP);
+                for aa=1:length(code_lines2)
+                    code_lines{end+1}=code_lines2{aa};
+                end;
+            end;
+        elseif ((strcmp(tokens{2},'if'))&&(length(tokens)>=5))
+            if (evaluate_if(tokens))
+                code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,current_parameter);
+                for aa=1:length(code_lines2)
+                    code_lines{end+1}=code_lines2{aa};
+                end;
+            end;
         end;
+        jj=kk+1;
+    elseif ((length(tokens)>=3)&&(strcmp(tokens{1},'^'))&&(strcmp(tokens{2},'template')))
+        name0=tokens{3};
+        txt2=get_template_code(template_txt,name0);
+        code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,current_parameter);
+        for aa=1:length(code_lines2)
+            code_lines{end+1}=code_lines2{aa};
+        end;
+        jj=jj+1;
+    else
+        code_lines{end+1}=lines{jj};
+        jj=jj+1;
     end;
-    ii=ii+1;
-end;
-if (~isempty(current_param.pname))
-    parameters{end+1}=current_param;
-    current_param=empty_current_param;
 end;
 
-end
-
-function [parameters,ind2,problem]=parse_cpp_parameters(tokens,ind)
-%EXAMPLE: (int N,float *X_out,float *X_in)
-parameters={};
-problem='';
-if (length(tokens)<2) ind2=-1; problem='Not enough tokens (*)'; return; end;
-
-if (~strcmp(tokens{ind},'(')) ind2=-1; problem='Expected ('; return; end;
-j=ind+1;
-while ((j<=length(tokens))&&(~strcmp(tokens{j},')')))
-    j=j+1;
-end;
-if (j>length(tokens)) ind2=-1; problem='Not enough tokens'; return; end;
-tokens2={};
-ind2=j+1;
-for j=ind+1:j-1
-    tokens2{end+1}=tokens{j};
-end;
-
-ii=1;
-while (ii<=length(tokens2))
-    jj=ii+1;
-    while ((jj<=length(tokens2))&&(~strcmp(tokens2{jj},','))) jj=jj+1; end;
-    list={};
-    for kk=ii:jj-1;
-        list{end+1}=tokens2{kk};
+if (~isempty(current_parameter))
+    PP=current_parameter;
+    for aa=1:length(code_lines)
+        
+        total_size='';
+        dimensions='';
+        for k=1:length(PP.dimensions)
+            if (k>1) total_size=[total_size,'*']; dimensions=[dimensions,',']; end;
+            total_size=sprintf('%s(%s)',total_size,PP.dimensions{k});
+            dimensions=[dimensions,PP.dimensions{k}];
+        end;
+        
+        code_lines{aa}=strrep(code_lines{aa},'$ptype$',PP.ptype);
+        code_lines{aa}=strrep(code_lines{aa},'$dtype$',PP.dtype);
+        code_lines{aa}=strrep(code_lines{aa},'$is_array$',sprintf('%d',PP.is_array));
+        code_lines{aa}=strrep(code_lines{aa},'$pname$',PP.pname);
+        code_lines{aa}=strrep(code_lines{aa},'$dimensions$',dimensions);
+        code_lines{aa}=strrep(code_lines{aa},'$pindex$',sprintf('%d',PP.pindex));
+        code_lines{aa}=strrep(code_lines{aa},'$total_size$',total_size);
     end;
-    if (length(list)<2) 
-        ind2=-1; problem='The length of the list is less than 2'; 
-    end;
-    ptype0=''; for kk=1:length(list)-1 ptype0=[ptype0,list{kk}]; end;
-    parameters{end+1}=struct('pname',list{end},'ptype',ptype0);
-    ii=jj+1;
 end;
 
 end
 
 function tokens=tokenize(line)
 
-token_strings={'*',';','+',',','-','/','(',')','{','}','[',']','&','@','#','^','=','|','''','"'};
+tic;
+token_strings='!@#$%^&*()-=+|''"{}[]/,;';
+%first split by whitespace
 list=strsplit(line);
-for kk=1:length(token_strings)
-    token_string=token_strings{kk};
-    list2={};
-    for j=1:length(list)
-        tmp=list{j};
-        tmp2=strsplit(tmp,token_string);
-        for ii=1:length(tmp2)
-            if (ii>1) list2{end+1}=token_string; end;
-            list2{end+1}=tmp2{ii};
+
+list2={};
+for kk=1:length(list)
+    str=list{kk};
+    ii=1;
+    for a=1:length(str)
+        if (strfind(token_strings,str(a)))
+            if (ii<a) list2{end+1}=str(ii:a-1); end;
+            list2{end+1}=str(a);
+            ii=a+1;
         end;
     end;
-    list=list2;
-end;
-tokens={};
-for j=1:length(list)
-    if (length(list{j})>0) tokens{end+1}=list{j}; end;
-end;
-
-end
-
-function tokens2=remove_leading_comment_characters(tokens)
-
-tokens2={};
-found=0;
-for j=1:length(tokens)
-    token=tokens{j};
-    if ((found)||((~strcmp(token,'/'))&&(~strcmp(token,'*'))))
-        tokens2{end+1}=token;
-        found=1;
+    if (ii<=length(str))
+        list2{end+1}=str(ii:end);
     end;
 end;
 
-end
-
-function ind=find_param(params,pname)
-
-ind=-1;
-for j=1:length(params)
-    if (strcmp(params{j}.pname,pname))
-        ind=j;
-    end;
-end;
+tokens=list2;
 
 end
 
 function str=cell_array_to_string(list)
 str='';
 for j=1:length(list)
-    str=[str,list{j},char(10)];
+    str=[str,list{j},sprintf('\n')];
 end;
 end
 
-function mcwrap_part_2(h_base_name,json_fname)
+function ret=evaluate_if(tokens)
 
-mcwrap_dirname=fileparts(json_fname);
-
-JSON=parse_json(fileread([mcwrap_dirname,'/mcwrap_reverse_it.json']));
-
-for j=1:length(JSON)
-
-    XX=JSON{j}{1};
-    function_name=XX.function_name;
-
-    input_parameters={};
-    output_parameters={};
-    arguments='';
-    for j=1:length(XX.parameters)
-        if (strcmp(XX.parameters{j}.prole,'input'))
-            input_parameters{end+1}=XX.parameters{j};
-        elseif (strcmp(XX.parameters{j}.prole,'output'))
-            output_parameters{end+1}=XX.parameters{j};
-        end;
-        if (j>1) arguments=[arguments,',']; end;
-        arguments=[arguments,'$',XX.parameters{j}.pname,'$'];
+ind=0;
+for i=1:length(tokens)
+    if (strcmp(tokens{i},'='))
+        ind=i;
     end;
-
-    m_file_path=fileparts(mfilename('fullpath'));
-    template_dir=[m_file_path,'/templates'];
-    
-    code=fileread([template_dir,'/template1.txt']);
-
-    code=strrep(code,'$h_base_name$',h_base_name);
-    code=strrep(code,'$function_name$',function_name);
-    code=strrep(code,'$arguments$',arguments);
-    code=strrep(code,'$nrhs$',sprintf('%d',length(input_parameters)));
-    code=strrep(code,'$nlhs$',sprintf('%d',length(output_parameters)));
-
-    set_up_inputs='';
-    for j=1:length(input_parameters)
-        PP=input_parameters{j};
-        tmp='';
-        if ((strcmp(PP.ptype,'float*'))||(strcmp(PP.ptype,'double*')))
-            tmp=fileread([template_dir,'/template_set_up_inputs_real_array.txt']);
-            tmp=strrep(tmp,'$pname$',PP.pname);
-            total_size='';
-            for k=1:length(PP.dimensions)
-                if (k>1) total_size=[total_size,'*']; end;
-                total_size=sprintf('%s(%s)',total_size,PP.dimensions{k});
-            end;
-            tmp=strrep(tmp,'$total_size$',total_size);
-            if (strcmp(PP.ptype,'float*'))
-                tmp=strrep(tmp,'$dtype$','float');
-            elseif (strcmp(PP.ptype,'double*'))
-                tmp=strrep(tmp,'$dtype$','double');
-            end;
-        elseif ((strcmp(PP.ptype,'int'))||(strcmp(PP.ptype,'float'))||(strcmp(PP.ptype,'double')))
-            tmp=fileread([template_dir,'/template_set_up_inputs_scalar.txt']);
-            tmp=strrep(tmp,'$pname$',PP.pname);
-            tmp=strrep(tmp,'$dtype$',PP.ptype);
-        end;
-        tmp=strrep(tmp,'$rhs_index$',sprintf('%d',j-1));
-        set_up_inputs=[set_up_inputs,char(9),'/// ',PP.pname,' (',PP.ptype,')',char(10),tmp,char(10)];
-    end;
-    code=strrep(code,'$set_up_inputs$',set_up_inputs);
-
-    set_up_outputs='';
-    for j=1:length(output_parameters)
-        PP=output_parameters{j};
-        tmp='';
-        if ((strcmp(PP.ptype,'float*'))||(strcmp(PP.ptype,'double*')))
-            tmp=fileread([template_dir,'/template_set_up_outputs_real_array.txt']);
-            tmp=strrep(tmp,'$pname$',PP.pname);
-            total_size='';
-            for k=1:length(PP.dimensions)
-                if (k>1) total_size=[total_size,'*']; end;
-                total_size=sprintf('%s(%s)',total_size,PP.dimensions{k});
-            end;
-            tmp=strrep(tmp,'$total_size$',total_size);
-            if (strcmp(PP.ptype,'float*'))
-                tmp=strrep(tmp,'$dtype$','float');
-            elseif (strcmp(PP.ptype,'double*'))
-                tmp=strrep(tmp,'$dtype$','double');
-            end;
-            dims_str='';
-            for kk=1:length(PP.dimensions)
-                if (kk>1) dims_str=[dims_str,',']; end;
-                dims_str=[dims_str,PP.dimensions{kk}];
-            end;
-            tmp=strrep(tmp,'$dims$',dims_str);
-        elseif ((strcmp(PP.ptype,'int'))||(strcmp(PP.ptype,'float'))||(strcmp(PP.ptype,'double')))
-            tmp=fileread([template_dir,'/template_set_up_outputs_scalar.txt']);
-            tmp=strrep(tmp,'$pname$',PP.pname);
-            tmp=strrep(tmp,'$dtype$',PP.ptype);
-        end;
-        tmp=strrep(tmp,'$lhs_index$',sprintf('%d',j-1));
-        set_up_outputs=[set_up_outputs,char(9),'/// ',PP.pname,' (',PP.ptype,')',char(10),tmp,char(10)];
-    end;
-    code=strrep(code,'$set_up_outputs$',set_up_outputs);
-
-    free_inputs='';
-    for pp=1:length(input_parameters)
-        PP=input_parameters{pp};
-        if ((strcmp(PP.ptype,'float*'))||(strcmp(PP.ptype,'double*')))
-            free_inputs=[free_inputs,sprintf('\tfree($%s$);\n',PP.pname)];
-        end;
-    end;
-    code=strrep(code,'$free_inputs$',free_inputs);
-
-    set_outputs='';
-    for pp=1:length(output_parameters)
-        PP=output_parameters{pp};
-        if ((strcmp(PP.ptype,'float*'))||(strcmp(PP.ptype,'double*')))
-            tmp=fileread([template_dir,'/template_set_outputs_real_array.txt']);
-            tmp=strrep(tmp,'$pname$',PP.pname);
-            total_size='';
-            for k=1:length(PP.dimensions)
-                if (k>1) total_size=[total_size,'*']; end;
-                total_size=sprintf('%s(%s)',total_size,PP.dimensions{k});
-            end;
-            tmp=strrep(tmp,'$total_size$',total_size);
-        elseif ((strcmp(PP.ptype,'int'))||(strcmp(PP.ptype,'float'))||(strcmp(PP.ptype,'double')))
-            tmp=fileread([template_dir,'/template_set_outputs_scalar.txt']);
-        end
-        set_outputs=[set_outputs,char(9),'/// ',PP.pname,' (',PP.ptype,')',char(10),tmp,char(10)];
-    end;
-    code=strrep(code,'$set_outputs$',set_outputs);
-
-    for pp=1:length(input_parameters)
-        code=strrep(code,['$',input_parameters{pp}.pname,'$'],['input_',input_parameters{pp}.pname]);
-    end;
-    for pp=1:length(output_parameters)
-        code=strrep(code,['$',output_parameters{pp}.pname,'$'],['output_',output_parameters{pp}.pname]);
-    end;
-
-    mex_cpp_fname=sprintf('%s/mcwrap_%s.cpp',mcwrap_dirname,function_name);
-    F=fopen(mex_cpp_fname,'w');
-    fprintf(F,'%s',code);
-    fclose(F);
-    
-    evalstr=['mex ',mex_cpp_fname];
-    for aa=1:length(XX.sources)
-        evalstr=[evalstr,' ',sprintf('%s/../%s',mcwrap_dirname,XX.sources{aa})];
-    end
-    evalstr=[evalstr,' -output ',mcwrap_dirname,'/../',function_name];
-    disp(evalstr);
-    eval(evalstr);
 end;
+if (ind==0) ret=0; return; end;
+if (ind<=3) ret=0; return; end;
+if (ind==4)
+    if (length(tokens)~=5) ret=0; return; end;
+    ret=strcmp(tokens{3},tokens{5});
+    return;
+elseif (ind==5)
+    if (length(tokens)~=7) ret=0; return; end;
+    ret=((strcmp(tokens{3},tokens{6}))&&(strcmp(tokens{4},tokens{7})));
+    return;
+end;
+ret=0;
+
+end
+
+function code=get_template_code(template_txt,name)
+
+ind1=strfind(template_txt,['#### ',name]);
+if (length(ind1)==0) code=''; return; end;
+ind1=ind1(1);
+AA=template_txt(ind1:end);
+ind2=strfind(AA,char(10));
+if (length(ind2)==0) code=''; return; end;
+ind2=ind2(1);
+AA=AA(ind2+1:end);
+ind3=strfind(AA,'#### ');
+if (length(ind3)==0) code=''; return; end;
+ind3=ind3(1);
+AA=AA(1:ind3-1);
+ii=1;
+while ((ii<=length(AA))&&(AA(ii)==char(10))) ii=ii+1; end;
+AA=AA(ii:end);
+ii=length(AA);
+while ((ii>=1)&&(AA(ii)==char(10))) ii=ii-1; end;
+AA=AA(1:ii);
+
+code=AA;
 
 end

@@ -1,5 +1,0 @@
-    double *_input_$pname$=mxGetPr(prhs[$rhs_index$]);
-    $dtype$ *input_$pname$=($dtype$ *)malloc(sizeof($dtype$)*($total_size$));
-    for (int i=0; i<($total_size$); i++) {
-        input_$pname$[i]=_input_$pname$[i];
-    }

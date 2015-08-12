@@ -1,3 +1,0 @@
-    plhs[$lhs_index$]=mxCreateDoubleMatrix($dims$,mxREAL);
-    double *_output_$pname$=mxGetPr(plhs[$lhs_index$]);
-    $dtype$ *output_$pname$=($dtype$ *)malloc(sizeof($dtype$)*($total_size$));
