@@ -2,7 +2,7 @@
 #define reverse_it_h
 
 /*
- * MCWRAP reverse_it { X_out[1,$N$] } <- { N , X_in[1,$N$] }
+ * MCWRAP reverse_it { X_out[1,$N$,1] } <- { N , X_in[1,$N$] }
  * SOURCES reverse_it.cpp
  */
 

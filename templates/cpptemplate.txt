@@ -13,6 +13,12 @@ See https://github.com/magland/mcwrap
 ///
 #include "../$code_basename$.h"
 
+int *make_dimension_array(int d1,int d2,int d3=1,int d4=1,int d5=1,int d6=1,int d7=1,int d8=1) { //are we going to be limited to 8 dimensions?
+    int *ret=new int[4]; //I know there is a memory leak here. Any suggestions?
+    ret[0]=d1; ret[1]=d2; ret[2]=d3; ret[3]=d4; ret[4]=d5; ret[5]=d6; ret[6]=d7; ret[7]=d8;
+    return ret;
+}
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     /////////////////////////////////////////
@@ -101,14 +107,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     $dtype$ input_$pname$=mxGetScalar(prhs[$pindex$-1]);
 
 #### setup_output_array
-
-    plhs[$pindex$-1]=mxCreateDoubleMatrix($dimensions$,mxREAL);
+    plhs[$pindex$-1]=mxCreateNumericArray(2,make_dimension_array($dimensions$),mxDOUBLE_CLASS,mxREAL);
     double *p_output_$pname$=mxGetPr(plhs[$pindex$-1]);
     $dtype$ *output_$pname$=($dtype$ *)malloc(sizeof($dtype$)*($total_size$));
 
 #### setup_output_array_complex
 
-    plhs[$pindex$-1]=mxCreateDoubleMatrix($dimensions$,mxCOMPLEX);
+    plhs[$pindex$-1]=mxCreateNumericArray(2,make_dimension_array($dimensions$),mxDOUBLE_CLASS,mxCOMPLEX);
     double *p_output_$pname$_re=mxGetPr(plhs[$pindex$-1]);
     double *p_output_$pname$_im=mxGetPi(plhs[$pindex$-1]);
     $dtype$ *output_$pname$=($dtype$ *)malloc(sizeof($dtype$)*($total_size$)*2);
