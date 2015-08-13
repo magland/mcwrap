@@ -30,7 +30,7 @@ for j=1:length(lines)
             ind=ind+2;
             [current_wrapping.input_parameters,ind,problem]=parse_parameters(tokens,ind);
             if (ind<=0) error(sprintf('Problem parsing input parameters, line %d: %s',j,problem)); end;
-        elseif (strcmp(token1,'SOURCE'))
+        elseif (strcmp(token1,'SOURCES'))
             disp(line);
             if (~wrapping) error(sprintf('Found SOURCE without a MCWRAP, line %d',j)); end;
             for j=2:length(tokens)

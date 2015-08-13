@@ -3,7 +3,7 @@
 
 /*
  * MCWRAP reverse_it { X_out[1,$N$] } <- { N , X_in[1,$N$] }
- * SOURCE reverse_it.cpp
+ * SOURCES reverse_it.cpp
  */
 
 //reverse the order of a vector

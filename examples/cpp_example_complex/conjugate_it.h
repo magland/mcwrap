@@ -3,7 +3,7 @@
 
 /*
  * MCWRAP conjugate_it { COMPLEX X_out[1,$N$] } <- { N , COMPLEX X_in[1,$N$] }
- * SOURCE conjugate_it.cpp
+ * SOURCES conjugate_it.cpp
  */
 
 //return the complex conjugate of a vector

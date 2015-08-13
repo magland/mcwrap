@@ -1,6 +1,6 @@
 C
 C MCWRAP square_it { y_output[1,$N$] } <- { N , x_input[1,$N$] }
-C SOURCE square_it.F
+C SOURCES square_it.F
 C void square_it(int N,double *y_output,double *x_input)
 C
 

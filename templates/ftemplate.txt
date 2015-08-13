@@ -18,7 +18,7 @@ C     Gateway routine
 
 C     Declarations
       implicit none
-      integer jj
+      integer ii,jj
       character*120 debug_line
 
 C     mexFunction arguments:
@@ -26,7 +26,7 @@ C     mexFunction arguments:
       integer nlhs, nrhs
 
 C     Function declarations:
-      mwPointer mxGetPr
+      mwPointer mxGetPr, mxGetPi
       mwPointer mxCreateDoubleMatrix
       integer mxIsNumeric
       mwPointer mxGetM, mxGetN
@@ -41,7 +41,7 @@ C     Declare inputs:
         ^template fdeclare_input_double
     %end if $ptype$=double
     %if $ptype$=double*
-        ^template fdeclare_input_double_array
+        ^template fdeclare_input_double_array$underscore_complex$
     %end if $ptype$=double*
 %end foreach input
 
@@ -54,10 +54,11 @@ C     Declare outputs:
         ^template fdeclare_output_double
     %end if $ptype$=double
     %if $ptype$=double*
-        ^template fdeclare_output_double_array
+        ^template fdeclare_output_double_array$underscore_complex$
     %end if $ptype$=double*
 %end foreach output
 
+        call mexPrintf('test A'//char(10))
 C-----Check the number of inputs/outputs
       if (nlhs==0) then
           nlhs=1
@@ -69,6 +70,7 @@ C-----Check the number of inputs/outputs
          call mexErrMsgIdAndTxt ('MCWRAP:IO','Too many outputs.')
       endif
     
+        call mexPrintf('test B'//char(10))
 C-----Setup the inputs
 %foreach input
     %if $ptype$=int
@@ -78,10 +80,11 @@ C-----Setup the inputs
         ^template fsetup_input_double
     %end if $ptype$=double
     %if $ptype$=double*
-        ^template fsetup_input_double_array
+        ^template fsetup_input_double_array$underscore_complex$
     %end if $ptype$=double*
 %end foreach input
     
+        call mexPrintf('test C'//char(10))
 C-----Setup the outputs
 %foreach output
     %if $ptype$=int
@@ -91,20 +94,23 @@ C-----Setup the outputs
         ^template fsetup_output_double
     %end if $ptype$=double
     %if $ptype$=double*
-        ^template fsetup_output_double_array
+        ^template fsetup_output_double_array$underscore_complex$
     %end if $ptype$=double*
 %end foreach output
     
+        call mexPrintf('test D'//char(10))
 C-----Run the subroutine
         call $function_name$($arguments$);
    
+        call mexPrintf('test E'//char(10))
 C-----Free the inputs
 %foreach input
     %if $ptype$=double*
-        ^template ffree_input_double_array
+        ^template ffree_input_double_array$underscore_complex$
     %end if $ptype$=double*
 %end foreach input
 
+        call mexPrintf('test F'//char(10))
 C-----Set the outputs
 %foreach output
     %if $ptype$=int
@@ -114,9 +120,11 @@ C-----Set the outputs
         ^template fset_output_double
     %end if $ptype$=double
     %if $ptype$=double*
-        ^template fset_output_double_array
+        ^template fset_output_double_array$underscore_complex$
     %end if $ptype$=double*
 %end foreach output
+
+call mexPrintf('test G'//char(10))
 
 C-----We are done
 
@@ -134,6 +142,17 @@ C-----We are done
         real*8, ALLOCATABLE ::
      +    input_$pname$(:)
 
+#### fdeclare_input_double_array_complex
+
+        mwPointer p_input_$pname$_re
+        mwPointer p_input_$pname$_im
+        real*8, ALLOCATABLE ::
+     +    input_$pname$(:)
+        real*8, ALLOCATABLE ::
+     +    input_$pname$_re(:)
+        real*8, ALLOCATABLE ::
+     +    input_$pname$_im(:)
+
 #### fdeclare_input_int
 
         mwPointer p_input_$pname$
@@ -150,6 +169,17 @@ CCC Scalar output not yet supported!
         real*8, ALLOCATABLE ::
      +    output_$pname$(:)
 
+#### fdeclare_output_double_array_complex
+
+        mwPointer p_output_$pname$_re
+        mwPointer p_output_$pname$_im
+        real*8, ALLOCATABLE ::
+     +    output_$pname$(:)
+        real*8, ALLOCATABLE ::
+     +    output_$pname$_re(:)
+        real*8, ALLOCATABLE ::
+     +    output_$pname$_im(:)
+
 #### fdeclare_output_int
 
 CCC Scalar output not yet supported!
@@ -157,6 +187,12 @@ CCC Scalar output not yet supported!
 #### ffree_input_double_array
 
         DEALLOCATE(input_$pname$)
+
+#### ffree_input_double_array_complex
+
+        DEALLOCATE(input_$pname$)
+        DEALLOCATE(input_$pname$_re)
+        DEALLOCATE(input_$pname$_im)
 
 #### fset_output_double
 
@@ -171,13 +207,42 @@ CCC Scalar outputs not yet supported
         end if
         DEALLOCATE(output_$pname$)
 
+#### fset_output_double_array
+
+        if ($pindex$ .LE. nlhs) then
+            call mxCopyReal8ToPtr(
+     +         output_$pname$,p_output_$pname$,
+     +         int($total_size$))
+        end if
+        DEALLOCATE(output_$pname$)
+
+#### fset_output_double_array
+
+        if ($pindex$ .LE. nlhs) then
+            do ii=1,$total_size$
+                output_$pname$(ii*2)=
+     +            output_$pname$_re(ii)
+                output_$pname$(ii*2+1)=
+     +            output_$pname$_im(ii)
+            end do
+            call mxCopyReal8ToPtr(
+     +         output_$pname$_re,p_output_$pname$_re,
+     +         int($total_size$))
+            call mxCopyReal8ToPtr(
+     +         output_$pname$_im,p_output_$pname$_im,
+     +         int($total_size$))
+        end if
+        DEALLOCATE(output_$pname$)
+        DEALLOCATE(output_$pname$_re)
+        DEALLOCATE(output_$pname$_im)
+
 #### fset_output_int
 
 CCC Scalar outputs not yet supported
 
 #### fsetup_input_double
 
-        p_input_$pname$=
+        p_input_$pname$_re=
      +    mxGetPr(prhs($pindex$));
         call mxCopyPtrToReal8(
      +    p_input_$pname$,
@@ -191,6 +256,34 @@ CCC Scalar outputs not yet supported
         call mxCopyPtrToReal8(
      +    p_input_$pname$,
      +    input_$pname$,int($total_size$))
+
+#### fsetup_input_double_array_complex
+
+        p_input_$pname$_re=
+     +    mxGetPr(prhs($pindex$));
+        p_input_$pname$_im=
+     +    mxGetPi(prhs($pindex$));
+        ALLOCATE(input_$pname$($total_size$*2))
+        ALLOCATE(input_$pname$_re($total_size$))
+        ALLOCATE(input_$pname$_im($total_size$))
+        call mxCopyPtrToReal8(
+     +    p_input_$pname$_re,
+     +    input_$pname$_re,int($total_size$))
+        if (p_input_$pname$_im .NE. 0) then
+            call mxCopyPtrToReal8(
+     +          p_input_$pname$_im,
+     +          input_$pname$_im,int($total_size$))
+        end if
+        do ii=1,$total_size$
+            input_$pname$(ii*2)=
+     +        input_$pname$_re(ii)
+            if (p_input_$pname$_im .NE. 0) then
+            input_$pname$(ii*2+1)=
+     +        input_$pname$_im(ii)
+            else
+            input_$pname$(ii*2+1)=0    
+            end if
+        end do
 
 #### fsetup_input_int
 
@@ -215,6 +308,26 @@ CCC Scalar output not yet supported
         end if
          ALLOCATE(
      + output_$pname$(
+     +   int($total_size$)))
+
+#### fsetup_output_double_array_complex
+
+        if ($pindex$ .LE. nlhs) then
+            plhs($pindex$)=
+     +          mxCreateDoubleMatrix($dimensions$,1)
+            p_output_$pname$_re=
+     +          mxGetPr(plhs($pindex$))
+            p_output_$pname$_im=
+     +          mxGetPi(plhs($pindex$))
+        end if
+         ALLOCATE(
+     + output_$pname$(
+     +   int($total_size$)*2))
+        ALLOCATE(
+     + output_$pname$_re(
+     +   int($total_size$)))
+        ALLOCATE(
+     + output_$pname$_im(
      +   int($total_size$)))
         
 #### fsetup_output_int
