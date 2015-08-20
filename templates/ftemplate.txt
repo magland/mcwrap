@@ -19,6 +19,7 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 !     Declarations
       implicit none
       integer ii,jj
+      mwSize numdims
       character*120 debug_line
 
 !     mexFunction arguments:
@@ -27,9 +28,11 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 
 !     Function declarations:
       mwPointer mxGetPr, mxGetPi
-      mwPointer mxCreateDoubleMatrix
+      mwPointer mxCreateNumericArray
+      integer*4 mxClassIDFromClassName
       integer mxIsNumeric
       mwPointer mxGetM, mxGetN
+      mwSize mxGetNumberOfDimensions
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !     Declare inputs:
@@ -61,7 +64,7 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     %end if $ptype$=int*
 %end foreach output
 
-        !call mexPrintf('test A'//char(10))
+        call mexPrintf('test A'//char(10))
 !-----Check the number of inputs/outputs
       if (nlhs==0) then
           nlhs=1
@@ -72,7 +75,7 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
          call mexErrMsgIdAndTxt ('MCWRAP:IO','Too many outputs.')
       endif
     
-        !call mexPrintf('test B'//char(10))
+        call mexPrintf('test B'//char(10))
 !-----Setup the inputs
 %foreach input
     %if $ptype$=int
@@ -89,28 +92,34 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     %end if $ptype$=int*
 %end foreach input
     
-        !call mexPrintf('test C'//char(10))
+        call mexPrintf('test C'//char(10))
 !-----Setup the outputs
 %foreach output
     %if $ptype$=int
+        call mexPrintf('test C.1'//char(10))
         ^template fsetup_output_int
+        call mexPrintf('test C.1b'//char(10))
     %end if $ptype$=int
     %if $ptype$=double
         ^template fsetup_output_double
     %end if $ptype$=double
     %if $ptype$=double*
+        call mexPrintf('test C.3'//char(10))
         ^template fsetup_output_double_array$underscore_complex$
+        call mexPrintf('test C.3b'//char(10))
     %end if $ptype$=double*
     %if $ptype$=int*
+        call mexPrintf('test C.4'//char(10))
         ^template fsetup_output_int_array
+        call mexPrintf('test C.4b'//char(10))
     %end if $ptype$=int*
 %end foreach output
     
-        !call mexPrintf('test D'//char(10))
+        call mexPrintf('test D'//char(10))
 !-----Run the subroutine
         call $function_name$($arguments$);
    
-        !call mexPrintf('test E'//char(10))
+        call mexPrintf('test E'//char(10))
 !-----Free the inputs
 %foreach input
     %if $ptype$=double*
@@ -121,7 +130,7 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     %end if $ptype$=int*
 %end foreach input
 
-    !call mexPrintf('test F'//char(10))
+    call mexPrintf('test F'//char(10))
 !-----Set the outputs
 %foreach output
     %if $ptype$=int
@@ -138,7 +147,7 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     %end if $ptype$=int*
 %end foreach output
 
-!call mexPrintf('test G'//char(10))
+call mexPrintf('test G'//char(10))
 
 !-----We are done
 
@@ -273,6 +282,14 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
         p_input_$pname$=mxGetPr(prhs($pindex$));
         ALLOCATE(input_$pname$($total_size$))
         call mxCopyPtrToReal8(p_input_$pname$,input_$pname$,int($total_size$))
+        !Check that we have the correct dimensions!
+        numdims=mxGetNumberOfDimensions(prhs($pindex$))
+        write(debug_line,*) '$$$$$$$$$$$ ',numdims
+        call mexPrintF(debug_line//char(10))
+        if (numdims .ne. $numdims$) then
+          call mexErrMsgTxt('Incorrect number of dimensions in input: $pname$')
+        end if
+        call mexPrintF('test X'//char(10))
 
 #### fsetup_input_double_array_complex
 
@@ -310,27 +327,43 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 
 #### fsetup_output_double_array
 
+        call mexPrintf('ttTest 0'//char(10));
         if ($pindex$ .LE. nlhs) then
-            plhs($pindex$)=mxCreateDoubleMatrix($dimensions$,0)
+            call mexPrintf('ttTest 1//char(10)');
+            !plhs($pindex$)=mxCreateDoubleMatrix($dimensions$,0)
+            call mexPrintf('ttTest 2 $pindex$ $pname$ $dimensions$ $numdims$'//char(10));
+            plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),0)
+            call mexPrintf('ttTest 3'//char(10));
             p_output_$pname$=mxGetPr(plhs($pindex$))
+            call mexPrintf('ttTest 4'//char(10));
         end if
+         call mexPrintf('ttTest 5'//char(10));
          ALLOCATE(output_$pname$(int($total_size$)))
+         call mexPrintf('ttTest 6'//char(10));
 
 #### fsetup_output_double_array_complex
 
         if ($pindex$ .LE. nlhs) then
-            plhs($pindex$)=mxCreateDoubleMatrix($dimensions$,1)
+            call mexPrintf('tttest 1');
+            plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),1)
+            call mexPrintf('tttest 2');
             p_output_$pname$_re=mxGetPr(plhs($pindex$))
+            call mexPrintf('tttest 3');
             p_output_$pname$_im=mxGetPi(plhs($pindex$))
+            call mexPrintf('tttest 4');
         end if
+         call mexPrintf('tttest 5');
          ALLOCATE(output_$pname$(int($total_size$)*2))
+         call mexPrintf('tttest 6');
         ALLOCATE(output_$pname$_re(int($total_size$)))
+         call mexPrintf('tttest 7');
         ALLOCATE(output_$pname$_im(int($total_size$)))
+         call mexPrintf('tttest 8');
 
 #### fsetup_output_int_array
 
         if ($pindex$ .LE. nlhs) then
-            plhs($pindex$)=mxCreateDoubleMatrix($dimensions$,0)
+            plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),0)
             p_output_$pname$=mxGetPr(plhs($pindex$))
         end if
         ALLOCATE(output_$pname$(int($total_size$)))

@@ -7,7 +7,7 @@ reverse_it(length(X),X)
 disp('fortran_example1');
 mcwrap('examples/fortran_example1/square_it.F');
 addpath([pwd,'/examples/fortran_example1']);
-X=[1,2,4,9,16];
+X=[1,2,4,9,16,25];
 square_it(length(X),X)
 
 disp('cpp_example_complex');

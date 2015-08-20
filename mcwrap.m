@@ -216,6 +216,7 @@ if (~isempty(current_parameter))
         end;
         code_lines{aa}=strrep(code_lines{aa},'$pname$',PP.pname);
         code_lines{aa}=strrep(code_lines{aa},'$dimensions$',dimensions);
+        code_lines{aa}=strrep(code_lines{aa},'$numdims$',sprintf('%d',length(PP.dimensions)));
         code_lines{aa}=strrep(code_lines{aa},'$pindex$',sprintf('%d',PP.pindex));
         code_lines{aa}=strrep(code_lines{aa},'$total_size$',total_size);
     end;
