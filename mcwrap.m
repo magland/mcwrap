@@ -5,7 +5,7 @@ function mcwrap(code_fname)
 % Syntax:  [] = mcwrap(code_fname)
 %
 % Inputs:
-%    code_fname - The path to a .h or .F file, which must have been
+%    code_fname - The path to a .h or .mcwrap file, which must have been
 %    prepared with special MCWRAP syntax
 %
 % Outputs:
@@ -42,6 +42,14 @@ template_dir=[m_file_path,'/templates'];
 for j=1:length(JSON)
     XX=JSON{j}{1};
     
+    is_fortran=0;
+    for j=1:length(XX.sources)
+        source0=XX.sources{1};
+        if ((strcmp(source0(end-1:end),'.f'))||(strcmp(source0(end-1:end),'.F'))||(strcmp(source0(end-3:end),'.f77'))||(strcmp(source0(end-3:end),'.f90')))
+            is_fortran=1;
+        end;
+    end;
+    
     input_parameters={};
     output_parameters={};
     arguments='';
@@ -56,9 +64,9 @@ for j=1:length(JSON)
         end;
     end;
     
-    if (strcmp(extension,'.h'))
+    if (~is_fortran)
         template_txt=fileread([template_dir,'/cpptemplate.txt']);
-    elseif (strcmp(extension,'.f')||strcmp(extension,'.F'))
+    elseif (is_fortran)
         template_txt=fileread([template_dir,'/ftemplate.txt']);
     end;
     template_code=get_template_code(template_txt,'main');
@@ -72,13 +80,13 @@ for j=1:length(JSON)
     code=strrep(code,'$arguments$',arguments);
     code=strrep(code,'$code_basename$',code_basename);
     
-    for j=1:length(input_parameters)
-        code=strrep(code,sprintf('$%s$',input_parameters{j}.pname),sprintf('input_%s',input_parameters{j}.pname));
+    for kk=1:length(input_parameters)
+        code=strrep(code,sprintf('$%s$',input_parameters{kk}.pname),sprintf('input_%s',input_parameters{kk}.pname));
     end;
     
-    if (strcmp(extension,'.h'))
+    if (~is_fortran)
         mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.cpp',dirname,XX.function_name);
-    elseif (strcmp(XX.parameters{j}.prole,'output'))
+    elseif (is_fortran) %% is this a problem -- changed from mysterious other
         mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.F',dirname,XX.function_name);
     end;
     
