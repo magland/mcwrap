@@ -39,43 +39,43 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !     Declare inputs:
-%foreach input
-    %if $ptype$=int
+@foreach input
+    @if $ptype$=int
         ^template fdeclare_input_int
-    %end if $ptype$=int
-    %if $ptype$=double
+    @end if $ptype$=int
+    @if $ptype$=double
         ^template fdeclare_input_double
-    %end if $ptype$=double
-    %if $ptype$=double*
+    @end if $ptype$=double
+    @if $ptype$=double*
         ^template fdeclare_input_double_array$underscore_complex$
-    %end if $ptype$=double*
-%end foreach input
+    @end if $ptype$=double*
+@end foreach input
 
 !     Declare outputs:
-%foreach output
-    %if $ptype$=int
+@foreach output
+    @if $ptype$=int
         ^template fdeclare_output_int
-    %end if $ptype$=int
-    %if $ptype$=double
+    @end if $ptype$=int
+    @if $ptype$=double
         ^template fdeclare_output_double
-    %end if $ptype$=double
-    %if $ptype$=double*
+    @end if $ptype$=double
+    @if $ptype$=double*
         ^template fdeclare_output_double_array$underscore_complex$
-    %end if $ptype$=double*
-    %if $ptype$=int*
+    @end if $ptype$=double*
+    @if $ptype$=int*
         ^template fdeclare_output_int_array
-    %end if $ptype$=int*
-%end foreach output
+    @end if $ptype$=int*
+@end foreach output
 
 !     Declare set inputs:
-%foreach set_input
-    %if $ptype$=int
+@foreach set_input
+    @if $ptype$=int
         ^template fdeclare_set_input_int
-    %end if $ptype$=int
-    %if $ptype$=double
+    @end if $ptype$=int
+    @if $ptype$=double
         ^template fdeclare_set_input_double
-    %end if $ptype$=double
-%end foreach set_input
+    @end if $ptype$=double
+@end foreach set_input
 
       !call mexPrintf('test A'//char(10))
 !-----Check the number of inputs/outputs
@@ -91,49 +91,49 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 
       !call mexPrintf('test A.2'//char(10))
 !-----Setup the set inputs
-%foreach set_input
-    %if $ptype$=int
+@foreach set_input
+    @if $ptype$=int
         ^template fsetup_set_input_int
-    %end if $ptype$=int
-    %if $ptype$=double
+    @end if $ptype$=int
+    @if $ptype$=double
         ^template fsetup_set_input_double
-    %end if $ptype$=double
-%end foreach set_input
+    @end if $ptype$=double
+@end foreach set_input
 
     
       !call mexPrintf('test B'//char(10))
 !-----Setup the inputs
-%foreach input
-    %if $ptype$=int
+@foreach input
+    @if $ptype$=int
         ^template fsetup_input_int
-    %end if $ptype$=int
-    %if $ptype$=double
+    @end if $ptype$=int
+    @if $ptype$=double
         ^template fsetup_input_double
-    %end if $ptype$=double
-    %if $ptype$=double*
+    @end if $ptype$=double
+    @if $ptype$=double*
         ^template fsetup_input_double_array$underscore_complex$
-    %end if $ptype$=double*
-    %if $ptype$=int*
+    @end if $ptype$=double*
+    @if $ptype$=int*
         ^template fsetup_input_int_array
-    %end if $ptype$=int*
-%end foreach input
+    @end if $ptype$=int*
+@end foreach input
     
       !call mexPrintf('test C'//char(10))
 !-----Setup the outputs
-%foreach output
-    %if $ptype$=int
+@foreach output
+    @if $ptype$=int
         ^template fsetup_output_int
-    %end if $ptype$=int
-    %if $ptype$=double
+    @end if $ptype$=int
+    @if $ptype$=double
         ^template fsetup_output_double
-    %end if $ptype$=double
-    %if $ptype$=double*
+    @end if $ptype$=double
+    @if $ptype$=double*
         ^template fsetup_output_double_array$underscore_complex$
-    %end if $ptype$=double*
-    %if $ptype$=int*
+    @end if $ptype$=double*
+    @if $ptype$=int*
         ^template fsetup_output_int_array
-    %end if $ptype$=int*
-%end foreach output
+    @end if $ptype$=int*
+@end foreach output
 
     
       !call mexPrintf('test D'//char(10))
@@ -142,31 +142,31 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
    
       !call mexPrintf('test E'//char(10))
 !-----Free the inputs
-%foreach input
-    %if $ptype$=double*
+@foreach input
+    @if $ptype$=double*
         ^template ffree_input_double_array$underscore_complex$
-    %end if $ptype$=double*
-    %if $ptype$=int*
+    @end if $ptype$=double*
+    @if $ptype$=int*
         ^template ffree_input_int_array
-    %end if $ptype$=int*
-%end foreach input
+    @end if $ptype$=int*
+@end foreach input
 
       !call mexPrintf('test F'//char(10))
 !-----Set the outputs
-%foreach output
-    %if $ptype$=int
+@foreach output
+    @if $ptype$=int
         ^template fset_output_int
-    %end if $ptype$=int
-    %if $ptype$=double
+    @end if $ptype$=int
+    @if $ptype$=double
         ^template fset_output_double
-    %end if $ptype$=double
-    %if $ptype$=double*
+    @end if $ptype$=double
+    @if $ptype$=double*
         ^template fset_output_double_array$underscore_complex$
-    %end if $ptype$=double*
-    %if $ptype$=int*
+    @end if $ptype$=double*
+    @if $ptype$=int*
         ^template fset_output_int_array
-    %end if $ptype$=int*
-%end foreach output
+    @end if $ptype$=int*
+@end foreach output
 
       !call mexPrintf('test G'//char(10))
 

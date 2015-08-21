@@ -116,6 +116,44 @@ for j=1:length(JSON)
     evalstr=[evalstr,' -output ',dirname,'/',XX.function_name];
     disp(evalstr);
     eval(evalstr);
+    
+    % m file for help
+    template_txt=fileread([template_dir,'/mfile_template.m']);
+    template_code=get_template_code(template_txt,'main');
+    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,set_input_parameters,[]);
+    code=cell_array_to_string(code_lines);
+    multi_line_description='';
+    input_parameter_list='';
+    for jj=1:length(input_parameters)
+        if (jj>1) input_parameter_list=[input_parameter_list,', ']; end;
+        input_parameter_list=[input_parameter_list,input_parameters{jj}.pname];
+    end;
+    output_parameter_list='';
+    for jj=1:length(output_parameters)
+        if (jj>1) output_parameter_list=[output_parameter_list,', ']; end;
+        output_parameter_list=[output_parameter_list,output_parameters{jj}.pname];
+    end;
+    code=strrep(code,'$function_name$',XX.function_name);
+    code=strrep(code,'$function_name_caps$',upper(XX.function_name));
+    code=strrep(code,'$input_parameter_list$',input_parameter_list);
+    code=strrep(code,'$output_parameter_list$',output_parameter_list);
+    code=strrep(code,'$one_line_description$','');
+    code=strrep(code,'$multi_line_description$',multi_line_description);
+    if (~isempty(multi_line_description))
+        code=strrep(code,'$has_multi_line_description$','1');
+    else
+        code=strrep(code,'$has_multi_line_description$','0');
+    end;
+    code=strrep(code,'$','');
+    code=strrep(code,' ()','');
+    
+    
+    mfile_fname=sprintf('%s/%s.m',dirname,XX.function_name);
+    FF=fopen(mfile_fname,'w');
+    fprintf(FF,'%s',code);
+    fclose(FF);
+    
+    
 end;
 disp('done.');
 
@@ -128,13 +166,13 @@ lines=strsplit(code,'\n','CollapseDelimiters',false);
 jj=1;
 while (jj<=length(lines))
     tokens=tokenize(lines{jj});
-    if ((length(tokens)>=2)&&(strcmp(tokens{1},'%')))
+    if ((length(tokens)>=2)&&(strcmp(tokens{1},'@')))
         kk=jj+1;
         depth=1; found=0;
         while ((kk<=length(lines))&&(~found))
             tokens2=tokenize(lines{kk});
             if ((length(tokens2)>=2))
-                if (strcmp(tokens2{1},'%'))
+                if (strcmp(tokens2{1},'@'))
                     if (strcmp(tokens2{2},'end'))
                         depth=depth-1;
                         if (depth==0)
