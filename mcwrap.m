@@ -87,7 +87,7 @@ for j=1:length(JSON)
     
     for kk=1:length(input_parameters)
         code=strrep(code,sprintf('$%s$',input_parameters{kk}.pname),sprintf('input_%s',input_parameters{kk}.pname));
-        code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('mxGetPr(prhs(%d))',kk));
+        code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs(%d)',kk));
     end;
     for kk=1:length(set_input_parameters)
         code=strrep(code,sprintf('$%s$',set_input_parameters{kk}.pname),sprintf('input_%s',set_input_parameters{kk}.pname));
