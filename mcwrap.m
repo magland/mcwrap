@@ -52,6 +52,7 @@ for j=1:length(JSON)
     
     input_parameters={};
     output_parameters={};
+    set_input_parameters={};
     arguments='';
     for j=1:length(XX.parameters)
         if (j>1) arguments=[arguments,',']; end;
@@ -61,6 +62,9 @@ for j=1:length(JSON)
         elseif (strcmp(XX.parameters{j}.prole,'output'))
             output_parameters{end+1}=XX.parameters{j};
             arguments=[arguments,'output_',XX.parameters{j}.pname];
+        elseif (strcmp(XX.parameters{j}.prole,'set_input'))
+            set_input_parameters{end+1}=XX.parameters{j};
+            arguments=[arguments,'input_',XX.parameters{j}.pname];
         end;
     end;
     
@@ -71,17 +75,22 @@ for j=1:length(JSON)
     end;
     template_code=get_template_code(template_txt,'main');
     disp(sprintf('evaluating template for %s...',XX.function_name));
-    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,[]);
+    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,set_input_parameters,[]);
     code=cell_array_to_string(code_lines);
     
     code=strrep(code,'$num_inputs$',sprintf('%d',length(input_parameters)));
     code=strrep(code,'$num_outputs$',sprintf('%d',length(output_parameters)));
+    code=strrep(code,'$num_set_inputs$',sprintf('%d',length(set_input_parameters)));
     code=strrep(code,'$function_name$',XX.function_name);
     code=strrep(code,'$arguments$',arguments);
     code=strrep(code,'$code_basename$',code_basename);
     
     for kk=1:length(input_parameters)
         code=strrep(code,sprintf('$%s$',input_parameters{kk}.pname),sprintf('input_%s',input_parameters{kk}.pname));
+        code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('mxGetPr(prhs(%d))',kk));
+    end;
+    for kk=1:length(set_input_parameters)
+        code=strrep(code,sprintf('$%s$',set_input_parameters{kk}.pname),sprintf('input_%s',set_input_parameters{kk}.pname));
     end;
     
 %     if (strcmp(extension,'.h'))
@@ -112,7 +121,7 @@ disp('done.');
 
 end
 
-function code_lines=evaluate_template(template_txt,code,input_parameters,output_parameters,current_parameter)
+function code_lines=evaluate_template(template_txt,code,input_parameters,output_parameters,set_input_parameters,current_parameter)
 
 code_lines={};
 lines=strsplit(code,'\n','CollapseDelimiters',false);
@@ -149,6 +158,8 @@ while (jj<=length(lines))
                 parameters=input_parameters;
             elseif (strcmp(tokens{3},'output'))
                 parameters=output_parameters;
+            elseif (strcmp(tokens{3},'set_input'))
+                parameters=set_input_parameters;
             end;
             for ii=1:length(parameters)
                 PP=parameters{ii};
@@ -160,19 +171,20 @@ while (jj<=length(lines))
                 txt3=strrep(txt3,'$dtype$',PP.dtype);
                 txt3=strrep(txt3,'$is_array$',sprintf('%d',PP.is_array));
                 txt3=strrep(txt3,'$is_complex$',sprintf('%d',PP.is_complex));
+                txt3=strrep(txt3,'$set_value$',sprintf('%s',PP.set_value));
                 if (strcmp(PP.is_complex,'1'))
                     txt3=strrep(txt3,'$underscore_complex$','_complex');
                 else
                     txt3=strrep(txt3,'$underscore_complex$','');
                 end;
-                code_lines2=evaluate_template(template_txt,txt3,input_parameters,output_parameters,PP);
+                code_lines2=evaluate_template(template_txt,txt3,input_parameters,output_parameters,set_input_parameters,PP);
                 for aa=1:length(code_lines2)
                     code_lines{end+1}=code_lines2{aa};
                 end;
             end;
         elseif ((strcmp(tokens{2},'if'))&&(length(tokens)>=5))
             if (evaluate_if(tokens))
-                code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,current_parameter);
+                code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,set_input_parameters,current_parameter);
                 for aa=1:length(code_lines2)
                     code_lines{end+1}=code_lines2{aa};
                 end;
@@ -182,7 +194,7 @@ while (jj<=length(lines))
     elseif ((length(tokens)>=3)&&(strcmp(tokens{1},'^'))&&(strcmp(tokens{2},'template')))
         name0=tokens{3};
         txt2=get_template_code(template_txt,name0);
-        code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,current_parameter);
+        code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,set_input_parameters,current_parameter);
         for aa=1:length(code_lines2)
             code_lines{end+1}=code_lines2{aa};
         end;
@@ -209,6 +221,7 @@ if (~isempty(current_parameter))
         code_lines{aa}=strrep(code_lines{aa},'$dtype$',PP.dtype);
         code_lines{aa}=strrep(code_lines{aa},'$is_array$',sprintf('%d',PP.is_array));
         code_lines{aa}=strrep(code_lines{aa},'$is_complex$',sprintf('%d',PP.is_complex));
+        code_lines{aa}=strrep(code_lines{aa},'$set_value$',sprintf('%s',PP.set_value));
         if (strcmp(PP.is_complex,'1'))
             code_lines{aa}=strrep(code_lines{aa},'$underscore_complex$','_complex');
         else

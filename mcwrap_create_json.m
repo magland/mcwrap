@@ -30,12 +30,24 @@ for j=1:length(lines)
             ind=ind+2;
             [current_wrapping.input_parameters,ind,problem]=parse_parameters(tokens,ind);
             if (ind<=0) error(sprintf('Problem parsing input parameters, line %d: %s',j,problem)); end;
+            current_wrapping.set_input_parameters={};
         elseif (strcmp(token1,'SOURCES'))
             disp(line);
             if (~wrapping) error(sprintf('Found SOURCE without a MCWRAP, line %d',j)); end;
             for j=2:length(tokens)
                 current_sources{end+1}=tokens{j};
             end;
+        elseif (strcmp(token1,'SET_INPUT'))
+            tmp=line;
+            ind1=strfind(tmp,' ');
+            if (ind1<=0) error(sprintf('Problem parsing line %d',j)); end;
+            tmp=strtrim(tmp(ind1:end));
+            ind2=strfind(tmp,'=');
+            if (ind1<=0) error(sprintf('Problem parsing line %d',j)); end;
+            tmp1=strtrim(tmp(1:ind2-1));
+            tmp2=strtrim(tmp(ind2+1:end));
+            PP.pname=tmp1; PP.dimensions={}; PP.is_complex=0; PP.set_value=tmp2;
+            current_wrapping.set_input_parameters{end+1}=PP;
         else
             if (wrapping)
                 if (length(tokens)>=2)
@@ -51,6 +63,7 @@ for j=1:length(lines)
                                 params{j}.prole='input';
                                 params{j}.dimensions=current_wrapping.input_parameters{ind0}.dimensions;
                                 params{j}.is_complex=current_wrapping.input_parameters{ind0}.is_complex;
+                                params{j}.set_value=current_wrapping.input_parameters{ind0}.set_value;
                             end;
                             ind0=find_param(current_wrapping.output_parameters,params{j}.pname);
                             if (ind0>0)
@@ -58,6 +71,14 @@ for j=1:length(lines)
                                 else params{j}.prole='output'; end;
                                 params{j}.dimensions=current_wrapping.output_parameters{ind0}.dimensions;
                                 params{j}.is_complex=current_wrapping.output_parameters{ind0}.is_complex;
+                                params{j}.set_value=current_wrapping.output_parameters{ind0}.set_value;
+                            end;
+                            ind0=find_param(current_wrapping.set_input_parameters,params{j}.pname);
+                            if (ind0>0)
+                                params{j}.prole='set_input';
+                                params{j}.dimensions=current_wrapping.set_input_parameters{ind0}.dimensions;
+                                params{j}.is_complex=current_wrapping.set_input_parameters{ind0}.is_complex;
+                                params{j}.set_value=current_wrapping.set_input_parameters{ind0}.set_value;
                             end;
                             if (isempty(params{j}.prole))
                                 error(sprintf('Unable to find parameter in MCWRAP macro, %s, line %d: %s',params{j}.pname,j,problem));
@@ -97,7 +118,7 @@ for j=1:length(wrappings)
             if (aa>1) dims_str=[dims_str,',']; end;
             dims_str=[dims_str,'"',param.dimensions{aa},'"'];
         end;
-        list{end+1}=sprintf('\t\t{"prole":"%s","ptype":"%s","pname":"%s","dimensions":[%s],"is_complex":"%d"}%s',param.prole,param.ptype,param.pname,dims_str,param.is_complex,comma);
+        list{end+1}=sprintf('\t\t{"prole":"%s","ptype":"%s","pname":"%s","dimensions":[%s],"is_complex":"%d","set_value":"%s"}%s',param.prole,param.ptype,param.pname,dims_str,param.is_complex,param.set_value,comma);
     end;
     list{end+1}=sprintf('\t],');
     list{end+1}=sprintf('\t"return_type":"void"');
@@ -151,7 +172,7 @@ for j=ind+1:j-1
     tokens2{end+1}=tokens{j};
 end;
 
-empty_current_param=struct; empty_current_param.pname=''; empty_current_param.dimensions={}; empty_current_param.is_complex=0;
+empty_current_param=struct; empty_current_param.pname=''; empty_current_param.dimensions={}; empty_current_param.is_complex=0; empty_current_param.set_value='';
 current_param=empty_current_param;
 current_dim='';
 
