@@ -257,7 +257,7 @@ tokens=tokenize(str);
 ret='';
 for j=1:length(tokens)
     token=tokens{j};
-    if (regexp(token,'^[a-zA-Z_][a-zA-Z0-9_]+$'))
+    if (regexp(token,'^[a-zA-Z_][a-zA-Z0-9_]*$'))
        token=['$',token,'$'];
     end;
     ret=[ret,' ',token];

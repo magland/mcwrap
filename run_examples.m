@@ -1,3 +1,5 @@
+disp('cd to each example directory');
+
 disp('cpp_example1');
 mcwrap('examples/cpp_example1/reverse_it.h');
 addpath([pwd,'/examples/cpp_example1']);
