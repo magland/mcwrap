@@ -138,7 +138,9 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     
       !call mexPrintf('test D'//char(10))
 !-----Run the subroutine
-        call $function_name$($arguments$);
+        call $function_name$( &
+$arguments$
+        );
    
       !call mexPrintf('test E'//char(10))
 !-----Free the inputs
@@ -178,35 +180,20 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     function mcwrap_size(X,j) result(ret)
         implicit none !important!!
         mwPointer X
+        integer j
         integer*4 ret
         mwSize numdims
         integer*4 dims(100)
-        character*120 debug_line
-        integer j
-        mwPointer ptr1
         mwSize mxGetNumberOfDimensions
         mwPointer mxGetDimensions
-
-        call mexPrintf('testing #$##')
-        write(debug_line,*) 'X = ',X
-        call mexPrintf(debug_line//char(10))
         
         numdims=mxGetNumberOfDimensions(X)
-         write(debug_line,*) 'numdims = ',numdims
-        call mexPrintf(debug_line//char(10))
         if ((j .lt. 1) .or. (j .gt. numdims)) then
             ret=1
             return
         end if
-        call mexPrintf('AAAAAAA 1'//char(10))
-        !ptr1=mxGetDimensions(X)
-        call mexPrintf('AAAAAAA 2'//char(10))
         call mxCopyPtrToInteger4(mxGetDimensions(X),dims,numdims)
-        call mexPrintf('AAAAAAA 3'//char(10))
         ret=dims(j)
-        write(debug_line,*) 'ret = ',ret,' dims(1) = ',dims(1),' dims(2) = ',dims(2),' j = ',j
-        call mexPrintf('AAAAAAA 4'//char(10))
-        call mexPrintf(debug_line//char(10))
     end function mcwrap_size
 
 #### fdeclare_set_input_int
@@ -408,8 +395,6 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 #### fsetup_check_dimensions
 
         !Check that we have the correct dimensions!
-        write(debug_line,*) 'ptr($pindex$) = ',prhs($pindex$)
-        call mexPrintf(debug_line//char(10))
         numdims=mxGetNumberOfDimensions(prhs($pindex$))
         if (numdims .ne. $numdims$) then
           call mexErrMsgTxt('Incorrect number of dimensions in input: $pname$')

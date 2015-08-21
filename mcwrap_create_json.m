@@ -41,6 +41,7 @@ for j=1:length(lines)
                 current_sources{end+1}=tokens{j};
             end;
         elseif (strcmp(token1,'SET_INPUT'))
+            disp(line);
             tmp=line;
             %replace size with mcwrap_size (whole word only)
             tmp=regexprep(tmp,'(\<size\>)','mcwrap_size');
@@ -51,7 +52,7 @@ for j=1:length(lines)
                 varname=current_wrapping.input_parameters{iii}.pname;
                 tmp=regexprep(tmp,['(\<',varname,'\>)'],['<',varname,'>']); %if you understand this, good for you!
             end;
-            ind1=strfind(tmp,' ');
+            ind1=strfind(tmp,'SET_INPUT')+9;
             if (ind1<=0) error(sprintf('Problem parsing line %d',j)); end;
             tmp=strtrim(tmp(ind1:end));
             ind2=strfind(tmp,'=');
@@ -63,10 +64,13 @@ for j=1:length(lines)
         else
             if (wrapping)
                 if (length(tokens)>=2)
-                    if (strcmp(tokens{2},current_wrapping.function_name))
+                    if (strcmp(tokens{1},'void'))
+                        tokens=tokens(2:end); %skip the void if it is there
+                    end;
+                    if (strcmp(tokens{1},current_wrapping.function_name))
                         disp(line);
                         disp(' ');
-                        [params,ind,problem]=parse_cpp_parameters(tokens,3);
+                        [params,ind,problem]=parse_cpp_parameters(tokens,2);
                         if (ind<=0) error(sprintf('Problem parsing cpp parameters, line %d: %s',j,problem)); end;
                         for j=1:length(params)
                             params{j}.prole='';
@@ -290,10 +294,15 @@ while (ii<=length(tokens2))
         ind2=-1; problem='The length of the list is less than 2'; 
     end;
     ptype0=''; for kk=1:length(list)-1 ptype0=[ptype0,list{kk}]; end;
+    ptype0=map_ptype(ptype0);
     parameters{end+1}=struct('pname',list{end},'ptype',ptype0);
     ii=jj+1;
 end;
 
+end
+
+function ret=map_ptype(ptype)
+    ret=ptype;
 end
 
 function ind=find_param(params,pname)

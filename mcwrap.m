@@ -39,8 +39,9 @@ JSON=parse_json(fileread(json_fname));
 m_file_path=fileparts(mfilename('fullpath'));
 template_dir=[m_file_path,'/templates'];
 
+JSON=JSON{1};
 for j=1:length(JSON)
-    XX=JSON{j}{1};
+    XX=JSON{j};
     
     is_fortran=0;
     for j=1:length(XX.sources)
@@ -55,7 +56,7 @@ for j=1:length(JSON)
     set_input_parameters={};
     arguments='';
     for j=1:length(XX.parameters)
-        if (j>1) arguments=[arguments,',']; end;
+        arguments=[arguments,'        '];
         if (strcmp(XX.parameters{j}.prole,'input'))
             input_parameters{end+1}=XX.parameters{j};
             arguments=[arguments,'input_',XX.parameters{j}.pname];
@@ -66,6 +67,8 @@ for j=1:length(JSON)
             set_input_parameters{end+1}=XX.parameters{j};
             arguments=[arguments,'input_',XX.parameters{j}.pname];
         end;
+        if (j<length(XX.parameters)) arguments=[arguments,',']; end;
+        arguments=[arguments,sprintf(' &\n')];
     end;
     
     if (~is_fortran)
