@@ -17,16 +17,19 @@ for j=1:length(lines)
         token1=tokens{1};
         if (strcmp(token1,'MCWRAP'))
             disp(line);
-            % EXAMPLE: MCWRAP reverse_it { X_out[1,$N$] } <- { N , X_in[1,$N$] }
+            % EXAMPLE: MCWRAP { X_out[1,N] } = reverse_it( N , X_in[1,N] )
             if (wrapping) error(sprintf('Problem in mcwrap, line %d, already wrapping.',j)); end;
             wrapping=true;
             if (length(tokens)<9) error(sprintf('Problem in mcwrap, not enough tokens, line %d.',j)); end;
-            current_wrapping.function_name=tokens{2};
-            ind=3;
+            ind_eq=find_string_in_array(tokens,'=');
+            if (ind_eq<=0) error(sprintf('Problem in mcwrap, line %d, expected =.',j)); end;
+            if (ind_eq>length(tokens)) error(sprintf('Problem in mcwrap, line %d, nothing after =',j)); end;
+            current_wrapping.function_name=tokens{ind_eq+1};
+            ind=2;
             [current_wrapping.output_parameters,ind,problem]=parse_parameters(tokens,ind);
             if (ind<=0) error(sprintf('Problem parsing output parameters, line %d: %s',j,problem)); end;
             if (ind+2>length(tokens)) error(sprintf('Problem in mcwrap, not enough tokens (*), line %d.',j)); end;
-            if ((~strcmp(tokens{ind},'<'))||(~strcmp(tokens{ind+1},'-'))) error(sprintf('Problem in mcwrap, expected <-, line %d.',j)); end;
+            if (~strcmp(tokens{ind},'=')) error(sprintf('Problem in mcwrap (*), expected =, line %d.',j)); end;
             ind=ind+2;
             [current_wrapping.input_parameters,ind,problem]=parse_parameters(tokens,ind);
             if (ind<=0) error(sprintf('Problem parsing input parameters, line %d: %s',j,problem)); end;
@@ -39,6 +42,15 @@ for j=1:length(lines)
             end;
         elseif (strcmp(token1,'SET_INPUT'))
             tmp=line;
+            %replace size with mcwrap_size (whole word only)
+            tmp=regexprep(tmp,'(\<size\>)','mcwrap_size');
+            %next replace the input parameters (whole words only) with the
+            %corresponding <varname> syntax to signify that we convert it to a
+            %pointer (that will then be used in mxGetDimensions() subroutine)
+            for iii=1:length(current_wrapping.input_parameters)
+                varname=current_wrapping.input_parameters{iii}.pname;
+                tmp=regexprep(tmp,['(\<',varname,'\>)'],['<',varname,'>']); %if you understand this, good for you!
+            end;
             ind1=strfind(tmp,' ');
             if (ind1<=0) error(sprintf('Problem parsing line %d',j)); end;
             tmp=strtrim(tmp(ind1:end));
@@ -140,6 +152,16 @@ json=cell_array_to_string(list);
 
 end
 
+function ind=find_string_in_array(X,str)
+for ii=1:length(X)
+    if (strcmp(X{ii},str))
+        ind=ii;
+        return;
+    end;
+end;
+ind=-1;
+end
+
 function tokens2=remove_leading_comment_characters(tokens)
 
 tokens2={};
@@ -155,20 +177,27 @@ end;
 end
 
 function [parameters,ind2,problem]=parse_parameters(tokens,ind)
-%EXAMPLE: { N , X_in[1,$N$] }
+%EXAMPLE: [ X_out[1,$N$] ] or ( N , X_in[1,$N$] )
 parameters={};
 problem='';
 if (length(tokens)<2) ind2=-1; problem='Not enough tokens (*)'; return; end;
 
-if (~strcmp(tokens{ind},'{')) ind2=-1; problem='Expected {'; return; end;
+if ((~strcmp(tokens{ind},'['))&&(~strcmp(tokens{ind},'('))) ind2=-1; problem='Expected [ or ('; return; end;
 j=ind+1;
-while ((j<=length(tokens))&&(~strcmp(tokens{j},'}')))
+level=1;
+while ((level>0)&&(j<=length(tokens)))
+    if ((strcmp(tokens{j},'['))||(strcmp(tokens{j},'(')))
+       level=level+1;
+    end;
+    if ((strcmp(tokens{j},']'))||(strcmp(tokens{j},')')))
+       level=level-1;
+    end;
     j=j+1;
 end;
-if (j>length(tokens)) ind2=-1; problem='Not enough tokens'; return; end;
+ind2=j;
+if (level>0) ind2=-1; problem='Not enough tokens'; return; end;
 tokens2={};
-ind2=j+1;
-for j=ind+1:j-1
+for j=ind+1:ind2-2
     tokens2{end+1}=tokens{j};
 end;
 
@@ -196,10 +225,12 @@ while (ii<=length(tokens2))
     else
         if (strcmp(token,','))
             if (isempty(current_dim)) ind2=-1; problem='found comma, but current_dim is empty'; end;
+            current_dim=replace_variables_by_dollar_sign_variables(current_dim);
             current_param.dimensions{end+1}=current_dim;
             current_dim='';
         elseif (strcmp(token,']'))
             if (~isempty(current_dim))
+                current_dim=replace_variables_by_dollar_sign_variables(current_dim);
                 current_param.dimensions{end+1}=current_dim;
                 current_dim='';
             end;
@@ -215,6 +246,18 @@ if (~isempty(current_param.pname))
     current_param=empty_current_param;
 end;
 
+end
+
+function ret=replace_variables_by_dollar_sign_variables(str)
+tokens=tokenize(str);
+ret='';
+for j=1:length(tokens)
+    token=tokens{j};
+    if (regexp(token,'^[a-zA-Z_][a-zA-Z0-9_]+$'))
+       token=['$',token,'$'];
+    end;
+    ret=[ret,' ',token];
+end;
 end
 
 function [parameters,ind2,problem]=parse_cpp_parameters(tokens,ind)
@@ -273,27 +316,7 @@ end
 
 function tokens=tokenize(line)
 
-tic;
-token_strings='!@#$%^&*()-=+|''"{}[]/,;';
-%first split by whitespace
-list=strsplit(line);
-
-list2={};
-for kk=1:length(list)
-    str=list{kk};
-    ii=1;
-    for a=1:length(str)
-        if (strfind(token_strings,str(a)))
-            if (ii<a) list2{end+1}=str(ii:a-1); end;
-            list2{end+1}=str(a);
-            ii=a+1;
-        end;
-    end;
-    if (ii<=length(str))
-        list2{end+1}=str(ii:end);
-    end;
-end;
-
-tokens=list2;
+tokens=regexp(line,'([a-zA-Z0-9_\.]+)|([^a-zA-Z0-9_\s])','tokens');
+tokens=[tokens{:}];
 
 end
