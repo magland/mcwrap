@@ -1,0 +1,5 @@
+############################################################
+ MCWRAP [ y_output[1, N] ] = square_it( x_input[1, N] )
+    SET_INPUT N = size(x_input,2)
+    SOURCES square_it.F
+    void square_it(int N,double *y_output,double *x_input)
