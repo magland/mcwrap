@@ -435,7 +435,7 @@ $arguments$
             p_output_$pname$_re=mxGetPr(plhs($pindex$))
             p_output_$pname$_im=mxGetPi(plhs($pindex$))
         end if
-         ALLOCATE(output_$pname$(int($total_size$)*2))
+        ALLOCATE(output_$pname$(int($total_size$)*2))
         ALLOCATE(output_$pname$_re(int($total_size$)))
         ALLOCATE(output_$pname$_im(int($total_size$)))
 

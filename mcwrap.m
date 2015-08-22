@@ -22,6 +22,12 @@ function mcwrap(code_fname)
 % Website: http://magland.github.io
 % August 2015; Last revision: 12-Aug-2015
 
+% to do:
+%   do not create _mcwrap directory until necessary
+%   cpptemplate.cpp
+%   change femplate.txt to fortrantemplate.f
+%   document the prerequisites: include install gfortran
+
 
 [dirname,code_basename,extension]=fileparts(code_fname);
 if (isempty(dirname)) dirname='.'; end;
@@ -54,6 +60,7 @@ for j=1:length(JSON)
     input_parameters={};
     output_parameters={};
     set_input_parameters={};
+    headers=XX.headers;
     arguments='';
     for j=1:length(XX.parameters)
         arguments=[arguments,'        '];
@@ -70,15 +77,18 @@ for j=1:length(JSON)
         if (j<length(XX.parameters)) arguments=[arguments,',']; end;
         arguments=[arguments,sprintf(' &\n')];
     end;
+    if (~is_fortran)
+        arguments=strrep(arguments,' &','');
+    end;
     
     if (~is_fortran)
-        template_txt=fileread([template_dir,'/cpptemplate.txt']);
+        template_txt=fileread([template_dir,'/cpptemplate.cpp']);
     elseif (is_fortran)
         template_txt=fileread([template_dir,'/ftemplate.txt']);
     end;
     template_code=get_template_code(template_txt,'main');
     disp(sprintf('evaluating template for %s...',XX.function_name));
-    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,set_input_parameters,[]);
+    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,set_input_parameters,[],headers);
     code=cell_array_to_string(code_lines);
     
     code=strrep(code,'$num_inputs$',sprintf('%d',length(input_parameters)));
@@ -90,7 +100,11 @@ for j=1:length(JSON)
     
     for kk=1:length(input_parameters)
         code=strrep(code,sprintf('$%s$',input_parameters{kk}.pname),sprintf('input_%s',input_parameters{kk}.pname));
-        code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs(%d)',kk));
+        if (~is_fortran)
+            code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs[%d-1]',kk));
+        else
+            code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs(%d)',kk));
+        end;
     end;
     for kk=1:length(set_input_parameters)
         code=strrep(code,sprintf('$%s$',set_input_parameters{kk}.pname),sprintf('input_%s',set_input_parameters{kk}.pname));
@@ -123,7 +137,7 @@ for j=1:length(JSON)
     % m file for help
     template_txt=fileread([template_dir,'/mfile_template.m']);
     template_code=get_template_code(template_txt,'main');
-    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,set_input_parameters,[]);
+    code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,set_input_parameters,[],headers);
     code=cell_array_to_string(code_lines);
     multi_line_description='';
     input_parameter_list='';
@@ -162,7 +176,7 @@ disp('done.');
 
 end
 
-function code_lines=evaluate_template(template_txt,code,input_parameters,output_parameters,set_input_parameters,current_parameter)
+function code_lines=evaluate_template(template_txt,code,input_parameters,output_parameters,set_input_parameters,current_parameter,headers)
 
 code_lines={};
 lines=strsplit(code,'\n','CollapseDelimiters',false);
@@ -193,7 +207,16 @@ while (jj<=length(lines))
             if (ii>jj+1) txt2=[txt2,char(10)]; end;
             txt2=[txt2,lines{ii}];
         end;
-        if ((strcmp(tokens{2},'foreach'))&&(length(tokens)>=3))
+        if ((strcmp(tokens{2},'foreach'))&&(length(tokens)>=3)&&(strcmp(tokens{3},'header')))
+            for ii=1:length(headers)
+                txt3=txt2;
+                txt3=strrep(txt3,'$header$',headers{ii});
+                LLL=strsplit(txt3,'\n');
+                for aa=1:length(LLL)
+                    code_lines{end+1}=LLL{aa};
+                end;
+            end;
+        elseif ((strcmp(tokens{2},'foreach'))&&(length(tokens)>=3))
             parameters={};
             if (strcmp(tokens{3},'input'))
                 parameters=input_parameters;
@@ -218,14 +241,14 @@ while (jj<=length(lines))
                 else
                     txt3=strrep(txt3,'$underscore_complex$','');
                 end;
-                code_lines2=evaluate_template(template_txt,txt3,input_parameters,output_parameters,set_input_parameters,PP);
+                code_lines2=evaluate_template(template_txt,txt3,input_parameters,output_parameters,set_input_parameters,PP,headers);
                 for aa=1:length(code_lines2)
                     code_lines{end+1}=code_lines2{aa};
                 end;
             end;
         elseif ((strcmp(tokens{2},'if'))&&(length(tokens)>=5))
             if (evaluate_if(tokens))
-                code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,set_input_parameters,current_parameter);
+                code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,set_input_parameters,current_parameter,headers);
                 for aa=1:length(code_lines2)
                     code_lines{end+1}=code_lines2{aa};
                 end;
@@ -235,7 +258,7 @@ while (jj<=length(lines))
     elseif ((length(tokens)>=3)&&(strcmp(tokens{1},'^'))&&(strcmp(tokens{2},'template')))
         name0=tokens{3};
         txt2=get_template_code(template_txt,name0);
-        code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,set_input_parameters,current_parameter);
+        code_lines2=evaluate_template(template_txt,txt2,input_parameters,output_parameters,set_input_parameters,current_parameter,headers);
         for aa=1:length(code_lines2)
             code_lines{end+1}=code_lines2{aa};
         end;

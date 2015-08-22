@@ -9,6 +9,9 @@ lines=strsplit(str,'\n');
 wrapping=false;
 current_wrapping=struct;
 current_sources={};
+current_headers={};
+[path0,file0,ext0]=fileparts(code_fname);
+if (strcmp(ext0,'.h')) current_headers{end+1}=[file0,ext0]; end;
 for j=1:length(lines)
     line=lines{j};
     tokens=tokenize(line);
@@ -36,9 +39,15 @@ for j=1:length(lines)
             current_wrapping.set_input_parameters={};
         elseif (strcmp(token1,'SOURCES'))
             disp(line);
-            if (~wrapping) error(sprintf('Found SOURCE without a MCWRAP, line %d',j)); end;
+            if (~wrapping) error(sprintf('Found SOURCES without a MCWRAP, line %d',j)); end;
             for j=2:length(tokens)
                 current_sources{end+1}=tokens{j};
+            end;
+        elseif (strcmp(token1,'HEADERS'))
+            disp(line);
+            if (~wrapping) error(sprintf('Found HEADERS without a MCWRAP, line %d',j)); end;
+            for j=2:length(tokens)
+                current_headers{end+1}=tokens{j};
             end;
         elseif (strcmp(token1,'SET_INPUT'))
             disp(line);
@@ -102,11 +111,13 @@ for j=1:length(lines)
                         end;
                         current_wrapping.params=params;
                         current_wrapping.sources=current_sources;
+                        current_wrapping.headers=current_headers;
                         current_wrapping=rmfield(current_wrapping,'input_parameters');
                         current_wrapping=rmfield(current_wrapping,'output_parameters');
                         wrappings{end+1}=current_wrapping;
                         current_wrapping=struct;
                         current_sources={};
+                        current_headers={};
                         wrapping=false;
                     end;
                 end;
@@ -146,6 +157,13 @@ for j=1:length(wrappings)
             
     end;
     list{end+1}=sprintf('\t"sources":[%s]',sources_str);
+    headers_str='';
+    for k=1:length(wrapping.headers)
+        header=wrapping.headers{k};
+        if (k>1) headers_str=[headers_str,',']; end;
+        headers_str=[headers_str,sprintf('"%s"',header)];   
+    end;
+    list{end+1}=sprintf('\t"headers":[%s]',headers_str);
     comma='';
     if (j<length(wrappings)) comma=','; end;
     list{end+1}=sprintf('}%s',comma);
