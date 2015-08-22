@@ -20,23 +20,23 @@ function mcwrap(code_fname)
 % Author: Jeremy Magland, Ph.D.
 % email address: jeremy.magland@gmail.com
 % Website: http://magland.github.io
-% August 2015; Last revision: 12-Aug-2015
+% August 2015; Last revision: 22-Aug-2015
 
 % to do:
-%   do not create _mcwrap directory until necessary
-%   cpptemplate.cpp
-%   change femplate.txt to fortrantemplate.f
 %   document the prerequisites: include install gfortran
 
 
 [dirname,code_basename,extension]=fileparts(code_fname);
 if (isempty(dirname)) dirname='.'; end;
+
+
+json=mcwrap_create_json(code_fname);
+json_fname=sprintf('%s/_mcwrap/mcwrap_%s.json',dirname,code_basename);
+
 if (~exist(sprintf('%s/_mcwrap',dirname),'dir'))
     mkdir(sprintf('%s/_mcwrap',dirname));
 end;
 
-json=mcwrap_create_json(code_fname);
-json_fname=sprintf('%s/_mcwrap/mcwrap_%s.json',dirname,code_basename);
 FF=fopen(json_fname,'w');
 fprintf(FF,'%s',json);
 fclose(FF);
@@ -82,9 +82,9 @@ for j=1:length(JSON)
     end;
     
     if (~is_fortran)
-        template_txt=fileread([template_dir,'/cpptemplate.cpp']);
+        template_txt=fileread([template_dir,'/cpp_template.cpp']);
     elseif (is_fortran)
-        template_txt=fileread([template_dir,'/ftemplate.txt']);
+        template_txt=fileread([template_dir,'/fortran_template.f']);
     end;
     template_code=get_template_code(template_txt,'main');
     disp(sprintf('evaluating template for %s...',XX.function_name));
