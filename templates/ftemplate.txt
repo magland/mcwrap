@@ -312,8 +312,8 @@ $arguments$
         !$pname$
         if ($pindex$ .LE. nlhs) then
             do ii=1,$total_size$
-                output_$pname$_re(ii)=output_$pname$(ii*2)
-                output_$pname$_im(ii)=output_$pname$(ii*2+1)
+                output_$pname$_re(ii)=output_$pname$(1+(ii-1)*2)
+                output_$pname$_im(ii)=output_$pname$(1+(ii-1)*2+1)
             end do
             call mxCopyReal8ToPtr(output_$pname$_re,p_output_$pname$_re,int($total_size$))
             call mxCopyReal8ToPtr(output_$pname$_im,p_output_$pname$_im,int($total_size$))
@@ -373,11 +373,11 @@ $arguments$
             call mxCopyPtrToReal8(p_input_$pname$_im,input_$pname$_im,int($total_size$))
         end if
         do ii=1,$total_size$
-            input_$pname$(ii*2)=input_$pname$_re(ii)
+            input_$pname$(1+(ii-1)*2)=input_$pname$_re(ii)
             if (p_input_$pname$_im .NE. 0) then
-            input_$pname$(ii*2+1)=input_$pname$_im(ii)
+            input_$pname$(1+(ii-1)*2+1)=input_$pname$_im(ii)
             else
-            input_$pname$(ii*2+1)=0    
+            input_$pname$(1+(ii-1)*2+1)=0    
             end if
         end do
 
