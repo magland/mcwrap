@@ -1,12 +1,14 @@
 # mcwrap
 
-Call a C/C++ function from MATLAB without fiddling with MEX.
+Call a C/C++/Fortran function from MATLAB without fiddling with MEX.
+
+This is a matlab program that automatically generates and compiles MEX code on a minimal syntax provided by the user.
 
 ## Getting started
 
-Just cd into the mcwrap directory and run "run_examples.m"
+Make sure you have set up a MATLAB-compatible C++ compiler (or Fortran compiler if needed).
 
-If you look in the example directories you will see the source .h/.cpp/.F files. The important thing to realize is that reverse_it.h and square_it.F have some special syntax that MCWRAP recognizes. All of the behind-the-scenes files are in the _mcwrap directory, where a mex .cpp or .F file is auto-generated and compiled.
+Just cd into the example directories and run the test programs
 
 ## Pronunciation
 
