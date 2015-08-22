@@ -2,7 +2,7 @@
 
 Call a C/C++/Fortran function from MATLAB without fiddling with MEX.
 
-This is a matlab program that automatically generates and compiles MEX code on a minimal syntax provided by the user.
+This is a matlab program that automatically generates and compiles MEX code using a minimal syntax provided by the user.
 
 ## Getting started
 
