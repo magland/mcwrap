@@ -44,6 +44,7 @@ fclose(FF);
 JSON=parse_json(fileread(json_fname));
 m_file_path=fileparts(mfilename('fullpath'));
 template_dir=[m_file_path,'/templates'];
+compile_mex_code='';
 
 JSON=JSON{1};
 for j=1:length(JSON)
@@ -132,6 +133,7 @@ for j=1:length(JSON)
     end
     evalstr=[evalstr,' -output ',dirname,'/',XX.function_name];
     disp(evalstr);
+    compile_mex_code=[compile_mex_code,sprintf('%s\n',evalstr)];
     eval(evalstr);
     
     % m file for help
@@ -170,8 +172,14 @@ for j=1:length(JSON)
     fprintf(FF,'%s',code);
     fclose(FF);
     
-    
 end;
+
+compile_mex_fname=sprintf('%s/compile_mex_%s.m',dirname,code_basename);
+fprintf('Writing %s...',compile_mex_fname);
+FF=fopen(compile_mex_fname,'w');
+fprintf(FF,'%s',compile_mex_code);
+fclose(FF);
+    
 disp('done.');
 
 end
@@ -238,8 +246,10 @@ while (jj<=length(lines))
                 txt3=strrep(txt3,'$set_value$',sprintf('%s',PP.set_value));
                 if (strcmp(PP.is_complex,'1'))
                     txt3=strrep(txt3,'$underscore_complex$','_complex');
+                    txt3=strrep(txt3,'$complex_space$','complex ');
                 else
                     txt3=strrep(txt3,'$underscore_complex$','');
+                    txt3=strrep(txt3,'$complex_space$','');
                 end;
                 code_lines2=evaluate_template(template_txt,txt3,input_parameters,output_parameters,set_input_parameters,PP,headers);
                 for aa=1:length(code_lines2)

@@ -398,16 +398,22 @@ $arguments$
 
         !Check that we have the correct dimensions!
         numdims=mxGetNumberOfDimensions(prhs($pindex$))
-        if (numdims .ne. $numdims$) then
+        if (numdims .gt. $numdims$) then
           call mexErrMsgTxt('Incorrect number of dimensions in input: $pname$')
         end if
         call mxCopyPtrToInteger4(mxGetDimensions(prhs($pindex$)),dims,numdims)
         ALLOCATE(dims2($numdims$))
         dims2=(/ $dimensions$ /)
         do ii=1,$numdims$
-          if (dims(ii) .ne. dims2(ii)) then
-            call mexErrMsgTxt('Incorrect size of input: $pname$')
-          end if
+          if (ii .le. numdims) then
+              if (dims(ii) .ne. dims2(ii)) then
+                call mexErrMsgTxt('Incorrect size of input: $pname$')
+              end if
+          else
+            if (dims2(ii) .ne. 1) then
+              call mexErrMsgTxt('Incorrect size of input (*): $pname$')
+            end if
+          end if;
         end do
         DEALLOCATE(dims2)
 
