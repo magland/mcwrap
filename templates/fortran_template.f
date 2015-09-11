@@ -22,11 +22,8 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
       implicit none
       integer ii,jj
       mwSize numdims
-<<<<<<< HEAD:templates/ftemplate.txt
-=======
       integer*4 dims(100)
       integer*4, ALLOCATABLE :: dims2(:)
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
       character*120 debug_line
 
 !     mexFunction arguments:
@@ -38,14 +35,9 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
       mwPointer mxCreateNumericArray
       integer*4 mxClassIDFromClassName
       integer mxIsNumeric
-<<<<<<< HEAD:templates/ftemplate.txt
-      mwPointer mxGetM, mxGetN
-      mwSize mxGetNumberOfDimensions
-=======
       mwSize mxGetNumberOfDimensions
       mwPointer mxGetDimensions
       integer mcwrap_size
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !     Declare inputs:
@@ -74,12 +66,6 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     @end if $ptype$=double*
     @if $ptype$=int*
         ^template fdeclare_output_int_array
-<<<<<<< HEAD:templates/ftemplate.txt
-    %end if $ptype$=int*
-%end foreach output
-
-        call mexPrintf('test A'//char(10))
-=======
     @end if $ptype$=int*
 @end foreach output
 
@@ -94,7 +80,6 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 @end foreach set_input
 
       !call mexPrintf('test A'//char(10))
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 !-----Check the number of inputs/outputs
       if (nlhs==0) then
           nlhs=1
@@ -118,11 +103,7 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 @end foreach set_input
 
     
-<<<<<<< HEAD:templates/ftemplate.txt
-        call mexPrintf('test B'//char(10))
-=======
       !call mexPrintf('test B'//char(10))
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 !-----Setup the inputs
 @foreach input
     @if $ptype$=int
@@ -139,32 +120,6 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
     @end if $ptype$=int*
 @end foreach input
     
-<<<<<<< HEAD:templates/ftemplate.txt
-        call mexPrintf('test C'//char(10))
-!-----Setup the outputs
-%foreach output
-    %if $ptype$=int
-        call mexPrintf('test C.1'//char(10))
-        ^template fsetup_output_int
-        call mexPrintf('test C.1b'//char(10))
-    %end if $ptype$=int
-    %if $ptype$=double
-        ^template fsetup_output_double
-    %end if $ptype$=double
-    %if $ptype$=double*
-        call mexPrintf('test C.3'//char(10))
-        ^template fsetup_output_double_array$underscore_complex$
-        call mexPrintf('test C.3b'//char(10))
-    %end if $ptype$=double*
-    %if $ptype$=int*
-        call mexPrintf('test C.4'//char(10))
-        ^template fsetup_output_int_array
-        call mexPrintf('test C.4b'//char(10))
-    %end if $ptype$=int*
-%end foreach output
-    
-        call mexPrintf('test D'//char(10))
-=======
       !call mexPrintf('test C'//char(10))
 !-----Setup the outputs
 @foreach output
@@ -184,17 +139,12 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 
     
       !call mexPrintf('test D'//char(10))
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 !-----Run the subroutine
         call $function_name$( &
 $arguments$
         );
    
-<<<<<<< HEAD:templates/ftemplate.txt
-        call mexPrintf('test E'//char(10))
-=======
       !call mexPrintf('test E'//char(10))
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 !-----Free the inputs
 @foreach input
     @if $ptype$=double*
@@ -205,11 +155,8 @@ $arguments$
     @end if $ptype$=int*
 @end foreach input
 
-<<<<<<< HEAD:templates/ftemplate.txt
-    call mexPrintf('test F'//char(10))
-=======
+
       !call mexPrintf('test F'//char(10))
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 !-----Set the outputs
 @foreach output
     @if $ptype$=int
@@ -226,11 +173,8 @@ $arguments$
     @end if $ptype$=int*
 @end foreach output
 
-<<<<<<< HEAD:templates/ftemplate.txt
-call mexPrintf('test G'//char(10))
-=======
+
       !call mexPrintf('test G'//char(10))
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 
 !----- We are done -----!
 
@@ -416,19 +360,6 @@ call mexPrintf('test G'//char(10))
         p_input_$pname$=mxGetPr(prhs($pindex$));
         ALLOCATE(input_$pname$($total_size$))
         call mxCopyPtrToReal8(p_input_$pname$,input_$pname$,int($total_size$))
-<<<<<<< HEAD:templates/ftemplate.txt
-        !Check that we have the correct dimensions!
-        numdims=mxGetNumberOfDimensions(prhs($pindex$))
-        write(debug_line,*) '$$$$$$$$$$$ ',numdims
-        call mexPrintF(debug_line//char(10))
-        if (numdims .ne. $numdims$) then
-          call mexErrMsgTxt('Incorrect number of dimensions in input: $pname$')
-        end if
-        call mexPrintF('test X'//char(10))
-
-=======
-        
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
 #### fsetup_input_double_array_complex
 
         !$pname$
@@ -494,20 +425,10 @@ call mexPrintf('test G'//char(10))
 
 #### fsetup_output_double_array
 
-<<<<<<< HEAD:templates/ftemplate.txt
-        call mexPrintf('ttTest 0'//char(10));
-        if ($pindex$ .LE. nlhs) then
-            call mexPrintf('ttTest 1//char(10)');
-            !plhs($pindex$)=mxCreateDoubleMatrix($dimensions$,0)
-            call mexPrintf('ttTest 2 $pindex$ $pname$ $dimensions$ $numdims$'//char(10));
-            plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),0)
-            call mexPrintf('ttTest 3'//char(10));
-=======
         !$pname$
         if ($pindex$ .LE. nlhs) then
             ^template check_dimensions_valid
             plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),0)
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
             p_output_$pname$=mxGetPr(plhs($pindex$))
             call mexPrintf('ttTest 4'//char(10));
         end if
@@ -519,26 +440,14 @@ call mexPrintf('test G'//char(10))
 
         !$pname$
         if ($pindex$ .LE. nlhs) then
-<<<<<<< HEAD:templates/ftemplate.txt
-            call mexPrintf('tttest 1');
-            plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),1)
-            call mexPrintf('tttest 2');
-=======
             ^template check_dimensions_valid
             plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),1)
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
             p_output_$pname$_re=mxGetPr(plhs($pindex$))
             call mexPrintf('tttest 3');
             p_output_$pname$_im=mxGetPi(plhs($pindex$))
             call mexPrintf('tttest 4');
         end if
-<<<<<<< HEAD:templates/ftemplate.txt
-         call mexPrintf('tttest 5');
-         ALLOCATE(output_$pname$(int($total_size$)*2))
-         call mexPrintf('tttest 6');
-=======
         ALLOCATE(output_$pname$(int($total_size$)*2))
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
         ALLOCATE(output_$pname$_re(int($total_size$)))
          call mexPrintf('tttest 7');
         ALLOCATE(output_$pname$_im(int($total_size$)))
@@ -548,10 +457,7 @@ call mexPrintf('test G'//char(10))
 
         !$pname$
         if ($pindex$ .LE. nlhs) then
-<<<<<<< HEAD:templates/ftemplate.txt
-=======
             ^template check_dimensions_valid
->>>>>>> e16e252f6eebce03920b17dfd2cd0e3e271cdd77:templates/fortran_template.f
             plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),0)
             p_output_$pname$=mxGetPr(plhs($pindex$))
         end if
