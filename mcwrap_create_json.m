@@ -10,6 +10,7 @@ wrapping=false;
 current_wrapping=struct;
 current_sources={};
 current_headers={};
+current_mexargs='';
 [path0,file0,ext0]=fileparts(code_fname);
 if (strcmp(ext0,'.h')) current_headers{end+1}=[file0,ext0]; end;
 for j=1:length(lines)
@@ -43,6 +44,11 @@ for j=1:length(lines)
             for j=2:length(tokens)
                 current_sources{end+1}=tokens{j};
             end;
+        elseif (strcmp(token1,'MEXARGS'))
+            disp(line);
+            if (~wrapping) error(sprintf('Found MEXARGS without a MCWRAP, line %d',j)); end;
+            ind=strfind(line,'MEXARGS')+8;
+            current_mexargs=[current_mexargs,' ',line(ind:end)];
         elseif (strcmp(token1,'HEADERS'))
             disp(line);
             if (~wrapping) error(sprintf('Found HEADERS without a MCWRAP, line %d',j)); end;
@@ -112,12 +118,14 @@ for j=1:length(lines)
                         current_wrapping.params=params;
                         current_wrapping.sources=current_sources;
                         current_wrapping.headers=current_headers;
+                        current_wrapping.mexargs=current_mexargs;
                         current_wrapping=rmfield(current_wrapping,'input_parameters');
                         current_wrapping=rmfield(current_wrapping,'output_parameters');
                         wrappings{end+1}=current_wrapping;
                         current_wrapping=struct;
                         current_sources={};
                         current_headers={};
+                        current_mexargs='';
                         wrapping=false;
                     end;
                 end;
@@ -164,6 +172,10 @@ for j=1:length(wrappings)
         headers_str=[headers_str,sprintf('"%s"',header)];   
     end;
     list{end+1}=sprintf('\t"headers":[%s]',headers_str);
+    mexargs=wrapping.mexargs;
+    mexargs=strrep(mexargs,'\','\\');
+    mexargs=strrep(mexargs,'"','\"');
+    list{end+1}=sprintf('\t"mexargs":"%s",',mexargs);
     comma='';
     if (j<length(wrappings)) comma=','; end;
     list{end+1}=sprintf('}%s',comma);

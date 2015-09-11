@@ -224,11 +224,11 @@ int mcwrap_size(const mxArray *X,int j) {
 #### fsetup_check_dimensions
 
         //Check that we have the correct dimensions!
-        int numdims=mxGetNumberOfDimensions(prhs[$pindex$-1]);
-        if (numdims!=$numdims$) {
-          mexErrMsgTxt("Incorrect number of dimensions in input: $pname$");
-        }
         {
+            int numdims=mxGetNumberOfDimensions(prhs[$pindex$-1]);
+            if (numdims!=$numdims$) {
+              mexErrMsgTxt("Incorrect number of dimensions in input: $pname$");
+            }
             const mwSize *dims2=mxGetDimensions(prhs[$pindex$-1]);
             int dims[]={ $dimensions$ };
             for (long ii=0; ii<numdims; ii++) {

@@ -140,6 +140,7 @@ for j=1:length(JSON)
         evalstr=[evalstr,' ',sprintf('%s/%s',dirname,XX.sources{aa})];
     end
     evalstr=[evalstr,' -output ',dirname,'/',XX.function_name];
+    evalstr=[evalstr,' ',XX.mexargs];
     disp(evalstr);
     compile_mex_code=[compile_mex_code,sprintf('%s\n',evalstr)];
     eval(evalstr);
