@@ -91,15 +91,9 @@ for j=1:length(JSON)
     end;
     
     if (~is_fortran)
-<<<<<<< HEAD
-        template_txt=fileread([template_dir,'/cpptemplate.txt']);
-    elseif (is_fortran)
-        template_txt=fileread([template_dir,'/ftemplate.txt']);
-=======
         template_txt=fileread([template_dir,'/cpp_template.cpp']);
     elseif (is_fortran)
         template_txt=fileread([template_dir,'/fortran_template.f']);
->>>>>>> cb589906876c44407cbbb77680e8c74223ac548d
     end;
     template_code=get_template_code(template_txt,'main');
     disp(sprintf('evaluating template for %s...',XX.function_name));
@@ -115,14 +109,6 @@ for j=1:length(JSON)
     
     for kk=1:length(input_parameters)
         code=strrep(code,sprintf('$%s$',input_parameters{kk}.pname),sprintf('input_%s',input_parameters{kk}.pname));
-<<<<<<< HEAD
-    end;
-    
-    if (~is_fortran)
-        mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.cpp',dirname,XX.function_name);
-    elseif (is_fortran) %% is this a problem -- changed from mysterious other
-        mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.F',dirname,XX.function_name);
-=======
         if (~is_fortran)
             code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs[%d-1]',kk));
         else
@@ -143,7 +129,6 @@ for j=1:length(JSON)
         mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.cpp',dirname,XX.function_name);
     elseif (is_fortran)
         mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.F90',dirname,XX.function_name);
->>>>>>> cb589906876c44407cbbb77680e8c74223ac548d
     end;
     
     FF=fopen(mex_source_fname,'w');
