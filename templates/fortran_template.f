@@ -430,11 +430,8 @@ $arguments$
             ^template check_dimensions_valid
             plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),0)
             p_output_$pname$=mxGetPr(plhs($pindex$))
-            call mexPrintf('ttTest 4'//char(10));
         end if
-         call mexPrintf('ttTest 5'//char(10));
          ALLOCATE(output_$pname$(int($total_size$)))
-         call mexPrintf('ttTest 6'//char(10));
 
 #### fsetup_output_double_array_complex
 
@@ -443,15 +440,11 @@ $arguments$
             ^template check_dimensions_valid
             plhs($pindex$)=mxCreateNumericArray($numdims$,(/ $dimensions$ /),mxClassIDFromClassName('double'),1)
             p_output_$pname$_re=mxGetPr(plhs($pindex$))
-            call mexPrintf('tttest 3');
             p_output_$pname$_im=mxGetPi(plhs($pindex$))
-            call mexPrintf('tttest 4');
         end if
         ALLOCATE(output_$pname$(int($total_size$)*2))
         ALLOCATE(output_$pname$_re(int($total_size$)))
-         call mexPrintf('tttest 7');
         ALLOCATE(output_$pname$_im(int($total_size$)))
-         call mexPrintf('tttest 8');
 
 #### fsetup_output_int_array
 
