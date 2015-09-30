@@ -86,8 +86,10 @@ subroutine mexFunction(nlhs, plhs, nrhs, prhs)
       end if
       if(nrhs .ne. $num_inputs$) then
          call mexErrMsgIdAndTxt ('MCWRAP:IO','Incorrect number of inputs') 
+         return 
       elseif(nlhs .gt. $num_outputs$) then
          call mexErrMsgIdAndTxt ('MCWRAP:IO','Too many outputs.')
+         return
       endif
 
 
@@ -409,10 +411,12 @@ $arguments$
           if (ii .le. numdims) then
               if (dims(ii) .ne. dims2(ii)) then
                 call mexErrMsgTxt('Incorrect size of input: $pname$')
+                return
               end if
           else
             if (dims2(ii) .ne. 1) then
               call mexErrMsgTxt('Incorrect size of input (*): $pname$')
+              return
             end if
           end if;
         end do
@@ -461,12 +465,14 @@ $arguments$
 
         if (($numdims$ .lt. 1) .or. ($numdims$ .gt. 20)) then
           call mexErrMsgTxt ('Bad number of dimensions for my taste: $numdims$') 
+          return
         end if
         ALLOCATE(dims2($numdims$))
         dims2=(/ $dimensions$ /)
         do ii=1,$numdims$
             if ((dims2(ii) .lt. 1) .or. (dims2(ii) .gt. 10000000000.0)) then
               call mexErrMsgTxt ('Bad array size for my taste: $dimensions$') 
+              return
             end if
         end do
         DEALLOCATE(dims2)
