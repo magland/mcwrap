@@ -237,6 +237,7 @@ while (jj<=length(lines))
             parameters={};
             if (strcmp(tokens{3},'input'))
                 parameters=input_parameters;
+                parameters=reorder_parameters_to_put_arrays_at_end(parameters);
             elseif (strcmp(tokens{3},'output'))
                 parameters=output_parameters;
             elseif (strcmp(tokens{3},'set_input'))
@@ -244,7 +245,7 @@ while (jj<=length(lines))
             end;
             for ii=1:length(parameters)
                 PP=parameters{ii};
-                PP.pindex=ii;
+                if (~isfield(PP,'pindex')) PP.pindex=ii; end; %see reorder_parametersto_put_arrays_at_end
                 PP.dtype=strrep(PP.ptype,'*','');
                 PP.is_array=(length(strfind(PP.ptype,'*'))>0);
                 txt3=txt2;
@@ -374,6 +375,30 @@ elseif (ind==5)
     return;
 end;
 ret=0;
+
+end
+
+function parameters2=reorder_parameters_to_put_arrays_at_end(parameters)
+
+parameters2={};
+for j=1:length(parameters)
+    PP=parameters{j};
+    PP.pindex=j;
+    is_array=(length(strfind(PP.ptype,'*'))>0);
+    if (~is_array)
+        parameters2{end+1}=PP;
+    end;
+end;
+
+for j=1:length(parameters)
+    PP=parameters{j};
+    PP.pindex=j;
+    is_array=(length(strfind(PP.ptype,'*'))>0);
+    if (is_array)
+        parameters2{end+1}=PP;
+    end;
+end;
+
 
 end
 
