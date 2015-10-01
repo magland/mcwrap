@@ -73,6 +73,8 @@ Notes and limitations
 
 ## Common pitfalls (in case something crashes)
 
+* It is very important that your array dimensions are correct. MCWRAP will check the inputs at run time to see if the matlab variable dimensions match your specification. However, it cannot check whether the internal function call is expecting those dimensions. If not, there could be an out-of-bounds memory access segmentation fault.
+
 * Be sure to declare complex variables with the "COMPLEX" keyword! For example, in the above example you could use:
 ```fortran
 C    MCWRAP [ COMPLEX y_output[1, N] ] = square_it( COMPLEX x_input[1, N] )
