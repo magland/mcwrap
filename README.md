@@ -71,6 +71,13 @@ Notes and limitations
 * Multiple .cpp/.F source files may be specified
 * Multiple functions may be wrapped using a single .mcwrap file
 
+## Common pitfalls (in case something crashes)
+
+* Be sure to declare complex variables with the "COMPLEX" keyword! For example, in the above example you could use:
+```fortran
+C    MCWRAP [ COMPLEX y_output[1, N] ] = square_it( COMPLEX x_input[1, N] )
+```
+
 ## Pronunciation
 
 MCWRAP is pronounced "emcee rap"
