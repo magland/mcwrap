@@ -79,8 +79,8 @@ for j=1:length(lines)
         else
             if (wrapping)
                 if (length(tokens)>=2)
-                    if (strcmp(tokens{1},'void'))
-                        tokens=tokens(2:end); %skip the void if it is there
+                    if (strcmp(tokens{1},'void'))||(strcmp(tokens{1},'bool'))
+                        tokens=tokens(2:end); %skip the void or bool if it is there
                     end;
                     if (strcmp(tokens{1},current_wrapping.function_name))
                         disp(line);
