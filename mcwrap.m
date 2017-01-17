@@ -22,9 +22,6 @@ function mcwrap(code_fname)
 % Website: http://magland.github.io
 % August 2015; Last revision: 22-Aug-2015
 
-% to do:
-%   document the prerequisites: include install gfortran
-
 
 [dirname,code_basename,extension]=fileparts(code_fname);
 if (isempty(dirname)) dirname='.'; end;
@@ -50,22 +47,6 @@ JSON=JSON{1};
 for j=1:length(JSON)
     XX=JSON{j};
     
-    is_fortran=0;
-    for j=1:length(XX.sources)
-        source0=lower(XX.sources{1});
-        if ((strcmp(source0(end-1:end),'.f'))||(strcmp(source0(end-3:end),'.f90'))||(strcmp(source0(end-3:end),'.f77')))
-            is_fortran=1;
-        end;
-    end;
-    
-    is_fortran=0;
-    for j=1:length(XX.sources)
-        source0=XX.sources{1};
-        if ((strcmp(source0(end-1:end),'.f'))||(strcmp(source0(end-1:end),'.F'))||(strcmp(source0(end-3:end),'.f77'))||(strcmp(source0(end-3:end),'.f90')))
-            is_fortran=1;
-        end;
-    end;
-    
     input_parameters={};
     output_parameters={};
     set_input_parameters={};
@@ -86,15 +67,10 @@ for j=1:length(JSON)
         if (j<length(XX.parameters)) arguments=[arguments,',']; end;
         arguments=[arguments,sprintf(' &\n')];
     end;
-    if (~is_fortran)
-        arguments=strrep(arguments,' &','');
-    end;
+    arguments=strrep(arguments,' &','');
     
-    if (~is_fortran)
-        template_txt=fileread([template_dir,'/cpp_template.cpp']);
-    elseif (is_fortran)
-        template_txt=fileread([template_dir,'/fortran_template.f']);
-    end;
+    template_txt=fileread([template_dir,'/cpp_template.cpp']);
+    
     template_code=get_template_code(template_txt,'main');
     disp(sprintf('evaluating template for %s...',XX.function_name));
     code_lines=evaluate_template(template_txt,template_code,input_parameters,output_parameters,set_input_parameters,[],headers);
@@ -109,33 +85,19 @@ for j=1:length(JSON)
     
     for kk=1:length(input_parameters)
         code=strrep(code,sprintf('$%s$',input_parameters{kk}.pname),sprintf('input_%s',input_parameters{kk}.pname));
-        if (~is_fortran)
-            code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs[%d-1]',kk));
-        else
-            code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs(%d)',kk));
-        end;
+        code=strrep(code,sprintf('<%s>',input_parameters{kk}.pname),sprintf('prhs[%d-1]',kk));
     end;
     for kk=1:length(set_input_parameters)
         code=strrep(code,sprintf('$%s$',set_input_parameters{kk}.pname),sprintf('input_%s',set_input_parameters{kk}.pname));
     end;
-    
-%     if (strcmp(extension,'.h'))
-%         mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.cpp',dirname,XX.function_name);
-%     elseif (strcmp(XX.parameters{j}.prole,'output'))
-%         mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.F90',dirname,XX.function_name);
-%     end;
 
-    if (~is_fortran)
-        mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.cpp',dirname,XX.function_name);
-    elseif (is_fortran)
-        mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.F90',dirname,XX.function_name);
-    end;
+    mex_source_fname=sprintf('%s/_mcwrap/mcwrap_%s.cpp',dirname,XX.function_name);
     
     FF=fopen(mex_source_fname,'w');
     fprintf(FF,'%s',code);
     fclose(FF);
     
-    evalstr=['mex ',mex_source_fname]; %capital .F is needed to run preprocessor correctly
+    evalstr=['mex ',mex_source_fname];
     for aa=1:length(XX.sources)
         evalstr=[evalstr,' ',sprintf('%s/%s',dirname,XX.sources{aa})];
     end

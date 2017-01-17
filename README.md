@@ -1,12 +1,14 @@
 # mcwrap
 
-Call a C/C++/Fortran function from MATLAB without fiddling with MEX.
+Call a C/C++ function from MATLAB without fiddling with MEX.
 
 This is a matlab program that automatically generates and compiles MEX code using a minimal syntax provided by the user.
 
+(Note that direct fortran wrapping is no longer supported. Instead, wrap the fortran using C.)
+
 ## Getting started
 
-Make sure you have set up a MATLAB-compatible C++ compiler (or Fortran compiler if needed).
+Make sure you have set up a MATLAB-compatible C++ compiler.
 
 Just cd into the example directories and run the test programs
 
@@ -37,31 +39,6 @@ mcwrap('reverse_it.h')
 ```
 Then you may call reverse_it directly from MATLAB.
 
-A minimal example for FORTRAN is shown here:
-
-```fortran
-C    MCWRAP [ y_output[1, N] ] = square_it( x_input[1, N] )
-C      SET_INPUT N = size(x_input,2)
-C      SOURCES square_it.F
-C      void square_it(int N,double *y_output,double *x_input)
-    
-        subroutine square_it(N,y_output,x_input)
-        real*8 x_input(N), y_output(N)
-
-        do ii = 1,N
-           y_output(ii) = x_input(ii) ** 2
-        enddo
-
-        return
-        end
-```
-
-Again just call from MATLAB:
-```MATLAB
-mcwrap('square_it.F')
-```
-and then you may call square_it directly.
-
 Notes and limitations
 * Help .m files are automatically generated for each wrapped function.
 * Complex arrays ARE supported, but it is assumed that the wrapped function operates on double arrays of size 2*N, with alternating real and imaginary parts.
@@ -76,8 +53,8 @@ Notes and limitations
 * It is very important that your array dimensions are correct. MCWRAP will check the inputs at run time to see if the matlab variable dimensions match your specification. However, it cannot check whether the internal function call is expecting those dimensions. If not, there could be an out-of-bounds memory access segmentation fault.
 
 * Be sure to declare complex variables with the "COMPLEX" keyword! For example, in the above example you could use:
-```fortran
-C    MCWRAP [ COMPLEX y_output[1, N] ] = square_it( COMPLEX x_input[1, N] )
+```c++
+ * MCWRAP [ COMPLEX X_out[1,N] ] = reverse_it( COMPLEX X_in[1,N] )
 ```
 
 ## Pronunciation
