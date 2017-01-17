@@ -4,7 +4,7 @@ Call a C/C++ function from MATLAB without fiddling with MEX.
 
 This is a matlab program that automatically generates and compiles MEX code using a minimal syntax provided by the user.
 
-(Note that direct fortran wrapping is no longer supported. Instead, wrap the fortran using C.)
+(Note that direct fortran wrapping is no longer supported. Instead, wrap the fortran using C, then apply mcwrap.)
 
 ## Getting started
 
@@ -38,6 +38,10 @@ From the MATLAB console you only need to run:
 mcwrap('reverse_it.h')
 ```
 Then you may call reverse_it directly from MATLAB.
+
+Other options available in the wrapping syntax:
+
+* MEXARGS -- pass additional (arbitrary) arguments to the mex compiler
 
 Notes and limitations
 * Help .m files are automatically generated for each wrapped function.
