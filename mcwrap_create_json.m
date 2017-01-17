@@ -355,7 +355,11 @@ end
 
 function tokens=tokenize(line)
 
-tokens=regexp(line,'([a-zA-Z0-9_\.]+)|([^a-zA-Z0-9_\s])','tokens');
+
+%tokens=regexp(line,'([a-zA-Z0-9_\.]+)|([^a-zA-Z0-9_\s])','tokens'); % old
+tokens=regexp(line,'([a-zA-Z0-9_\./]+)|([^a-zA-Z0-9/_\s])','tokens');
+% ahb hack to allow file paths w/ slashes
+
 tokens=[tokens{:}];
 
 end
