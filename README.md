@@ -49,7 +49,7 @@ Notes and limitations
 * For now only the following input/output types are supported: integer, double, double array, complex double array
 * Scalar outputs must be treated as arrays of size 1
 * The MCWRAP syntax may be included in the comments of the source .h/.f file or may be included in a separate .mcwrap file
-* Multiple .cpp/.F source files may be specified
+* Multiple .cpp source files may be specified
 * Multiple functions may be wrapped using a single .mcwrap file
 
 ## Common pitfalls (in case something crashes)
